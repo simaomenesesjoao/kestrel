@@ -106,7 +106,8 @@ void chebinator::calc_finish(){
     file.open(std::string(homedir) + "/kestrel_info.txt", std::ofstream::app);
 
     // Output the information about the program
-    file << "Lx,Ly=" << Lx << "," << Ly;
+    file << "id=" << std::string(getenv("PBS_JOBID"));
+    file << " Lx,Ly=" << Lx << "," << Ly;
     file << " N=" << current_moments;
     file << " ND=" << current_ndis;
     file << " NR=" << current_nrand;
