@@ -35,7 +35,7 @@ int main(int argc, char **argv){
     W = W/SCALE;
     energies = energies/SCALE;
 
-    energies = Eigen::Array<TR, -1, 1>::LinSpaced(50000, -0.99, 0.99);
+    //energies = Eigen::Array<TR, -1, 1>::LinSpaced(50000, -0.99, 0.99);
 
     
     int min_flux;
