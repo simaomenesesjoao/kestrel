@@ -6,12 +6,16 @@
 #include <algorithm>
 #include <fstream>
 #include <Eigen/Dense>
+#include <H5Cpp.h>
+#include <H5Group.h>
 
 #include "general.hpp"
 #include "kpm_vector.hpp"
 #include "aux.hpp"
 #include "hamiltonian.hpp"
 #include "cheb.hpp"
+#include "ComplexTraits.hpp"
+#include "myHDF5.hpp"
 
 //
 // https://stackoverflow.com/questions/11468414/using-auto-and-lambda-to-handle-signal
@@ -26,171 +30,140 @@ namespace {
 
 int main(int argc, char **argv){
 
-    unsigned Lx, Ly, num_random, moments, mult, num_disorder;
-    double W;
-    int seed = -1;
+    // Parse input from the command line
+    parameters P;
+    parse_input(argc, argv, &P);
 
-    Eigen::Array<TR, -1, -1> energies;
-    parse_input(argc, argv, &Lx, &Ly, &num_random, &moments, &mult, &seed, &energies, &W, &num_disorder);
-    W = W/SCALE;
-    energies = energies/SCALE;
+    // Rescale the relevant quantities
+    P.anderson_W = P.anderson_W/SCALE;
+    P.energies = P.energies/SCALE;
 
-    //energies = Eigen::Array<TR, -1, 1>::LinSpaced(50000, -0.99, 0.99);
-
-    
+    // Calculate the compatible magnetic fields and
+    // the minimum magnetic flux allowed
     int min_flux;
     int M12, M21;
-    extended_euclidean(Lx, Ly, &M12, &M21, &min_flux);
+    extended_euclidean(P.Lx, P.Ly, &M12, &M21, &min_flux);
+    Eigen::Matrix<int, 2, 2> gauge_matrix;
+    gauge_matrix(0,0) = 0;
+    gauge_matrix(1,1) = 0;
+    gauge_matrix(0,1) = -M12*P.mult;
+    gauge_matrix(1,0) = M21*P.mult;
     
-
-
     // Print the parameters gotten from the command line
-    verbose1("_____Compilation parameters_____\n");
-    verbose1("STRIDE: " << STRIDE << "\n");
-    verbose1("VERBOSE: " << VERBOSE << "\n");
+    print_compilation_info();
+    print_ham_info(P);
+    print_magnetic_info(P, M12, M21, min_flux);
+    print_cheb_info(P);
+    print_output_info(P);
+    print_restart_info(P);
 
-    verbose1("______System parameters_______\n");
-    verbose1("Physical system:     Graphene\n");
-    verbose1("Lx:                  " + std::to_string(Lx)           + "\n");
-    verbose1("Ly:                  " + std::to_string(Ly)           + "\n");
-    verbose1("num random:          " + std::to_string(num_random)   + "\n");
-    verbose1("num disorder:        " + std::to_string(num_disorder) + "\n");
-    verbose1("num moments:         " + std::to_string(moments)      + "\n");
-    verbose1("mult:                " + std::to_string(mult)         + "\n");
-    verbose1("seed:                " + std::to_string(seed)         + "\n");
-    verbose1("anderson:            " + std::to_string(W*SCALE)      + "\n");
-    if(energies.size() > 10){
-        verbose1("list of energies:    ");
-        verbose1(energies.topRows(2).transpose()*SCALE);
-        verbose1(" ... (" + std::to_string(energies.size() - 4) + " more) ... ");
-        verbose1(energies.bottomRows(2).transpose()*SCALE);
-        verbose1("\n");
-    } else {
-        verbose1("list of energies:    " << energies.transpose()*SCALE     << "\n");
-    }
-
-
-    verbose1("\nInformation about the magnetic field:\n");
-    verbose1("Minimum flux:        " + std::to_string(min_flux) + "\n");
-    verbose1("Flux:                " + std::to_string(min_flux) + "\n");
-    verbose1("Gauge matrix M(0,1): " + std::to_string(-M12*int(mult)) + "\n");
-    verbose1("Gauge matrix M(1,0): " + std::to_string(M21*int(mult)) + "\n");
-
-
-    if(seed != -1){
-        std::srand(seed);
+    // set the global seed
+    // NOTE: should have separate seed for disorder and
+    //       random realisation of KPM vector
+    if(P.seed != -1){
+        std::srand(P.seed);
     } else {
         std::srand((unsigned int) time(0));
     }
 
 
-
-
-    Eigen::Matrix<int, 2, 2> gauge_matrix;
-    gauge_matrix(0,0) = 0;
-    gauge_matrix(1,1) = 0;
-    gauge_matrix(0,1) = -M12*int(mult);
-    gauge_matrix(1,0) = M21*int(mult);
-
-    //std::cout << "gauge:\n" << gauge_matrix << "\n";
+    // Set the Hamiltonian object and initialize it with
+    // the values obtained from the command line
     hamiltonian H;
-    H.set_geometry(Lx, Ly);
+    H.set_geometry(P.Lx, P.Ly);
     H.set_regular_hoppings();
-    H.set_anderson_W(W);
+    H.set_anderson_W(P.anderson_W);
     H.set_peierls(gauge_matrix);
-    //double time = H.time_H();
+    double time = H.time_H();
 
 
+    // Chebyshev object to iterate KPM vectors with the
+    // Hamiltonian object
     chebinator C;
+    C.set_hamiltonian(&H);
+
+    // Set the external signal handler to use a method from the 
+    // Chebyshev object
     std::signal(SIGUSR1, signal_handler);
     shutdown_handler = [&](int signal) { C.calc_finish(); };
-    C.set_hamiltonian(&H);
 
     // There two are not required for the computation, but are used 
     // to obtain output information about the program
-    C.set_seed(seed);
-    C.set_mult(mult);
-    //double estimate = C.get_estimate(time, moments, num_disorder, num_random);
-    //verbose1("Estimated time for completion: " << estimate << "\n");
-    C.cheb_iteration(moments, num_disorder, num_random);
+    C.set_seed(P.seed);
+    C.set_mult(P.mult);
+
+    // Estimate the time for completion
+    double estimate = C.get_estimate(time, P.nmoments, P.ndisorder, P.nrandom);
+    verbose1("Estimated time for completion: " << estimate << " seconds.\n");
+
+    if(P.need_read){
+        KPM_vector KPM0, KPM1;
+        KPM0.set_geometry(H.Lx, H.Ly, H.Norb);
+        KPM1.set_geometry(H.Lx, H.Ly, H.Norb);
+        Eigen::Array<TR, -1, -1> mu1;
+        load(P.filename_read, &C.KPM0, &C.KPM1, &mu1);
+        C.cheb_iteration_restart(P.moremoments, KPM0, KPM1, mu1);
+    } else {
+        C.cheb_iteration(P.nmoments, P.ndisorder, P.nrandom);
+    }
+
+    if(P.need_write){
+        C.save(P.filename_write);
+    }
 
 
 
 
-    Eigen::Array<TR, -1, -1> mu(moments,1);
+    Eigen::Array<TR, -1, -1> mu(P.nmoments,1);
     mu = C.mu;
     verbose2("Finished Chebychev iterations\n");
 
 
-    // shorten the mu matrix if so desired (to assess convergence)
-    unsigned moments_trunc = moments/2;
-    Eigen::Array<TR, -1, -1> mu_trunc(moments_trunc, 1);
-    mu_trunc = mu.block(0, 0, moments_trunc, 1);
-
-    // Calculate the density of states
-    Eigen::Array<TR, -1, -1> dos_green1, dos_green1_trunc, dos_green2, dos_green2_trunc, dos_jack, dos_jack_trunc;
 
 
-    // These values are in units of t
-    //double S1 = 0.003/SCALE; 
-    //double S2 = 0.015/SCALE;
+    if(P.output_energies){
+        // shorten the mu matrix if so desired (to assess convergence)
+        unsigned moments_trunc = P.nmoments/2;
+        Eigen::Array<TR, -1, -1> mu_trunc(moments_trunc, 1);
+        mu_trunc = mu.block(0, 0, moments_trunc, 1);
 
-    //dos_green1          = calc_dos(mu,       energies, "green " + std::to_string(S1));
-    //dos_green1_trunc    = calc_dos(mu_trunc, energies, "green " + std::to_string(S1));
-    //dos_green2          = calc_dos(mu,       energies, "green " + std::to_string(S2));
-    //dos_green2_trunc    = calc_dos(mu_trunc, energies, "green " + std::to_string(S2));
-    dos_jack            = calc_dos(mu,       energies, "jackson");
-    dos_jack_trunc      = calc_dos(mu_trunc, energies, "jackson");
+        // Calculate the density of states
+        Eigen::Array<TR, -1, -1> dos_jack, dos_jack_trunc;
+        dos_jack            = calc_dos(mu,       P.energies, "jackson");
+        dos_jack_trunc      = calc_dos(mu_trunc, P.energies, "jackson");
 
-    energies *= SCALE;
+        P.energies *= SCALE;
 
-    //std::cout << "dos: " << dos << "\n";
-    for(unsigned i = 0; i < dos_jack.size(); i++){
-        std::string metadata;
-        metadata  = "Lx:" + std::to_string(Lx);
-        metadata += " Ly:" + std::to_string(Ly);
-        metadata += " Bmult:" + std::to_string(mult);
-        metadata += " nrandom:" + std::to_string(num_random);
-        metadata += " ndisorder:" + std::to_string(num_disorder);
-        metadata += " seed:" + std::to_string(seed);
+        verbose2("Finished calculating DoS\n");
+        for(unsigned i = 0; i < dos_jack.size(); i++){
+            std::string metadata;
+            metadata  = "Lx:" + std::to_string(P.Lx);
+            metadata += " Ly:" + std::to_string(P.Ly);
+            metadata += " Bmult:" + std::to_string(P.mult);
+            metadata += " nrandom:" + std::to_string(P.nrandom);
+            metadata += " ndisorder:" + std::to_string(P.ndisorder);
+            metadata += " seed:" + std::to_string(P.seed);
 
 
-        std::cout << metadata << " N:" << moments << " en:" << energies(i) << " dos:" << dos_jack(i) << "\n";
-        std::cout << metadata << " N:" << moments_trunc << " en:" << energies(i) << " dos:" << dos_jack_trunc(i) << "\n";
+            std::cout << metadata << " N:" << P.nmoments << " en:" << P.energies(i) << " dos:" << dos_jack(i) << "\n";
+            std::cout << metadata << " N:" << moments_trunc << " en:" << P.energies(i) << " dos:" << dos_jack_trunc(i) << "\n";
+        }
+        
+         //Save to file
+        std::ofstream file;
+        //file.open("dos_green1.dat");
+        unsigned N_energies = P.energies.size();
+
+        file.open("dos_W" + std::to_string(P.anderson_W*SCALE) + "_B" + std::to_string(P.mult) + ".dat");
+        for(unsigned i = 0; i < N_energies; i++)
+            file << P.energies(i) << " " << dos_jack(i) << "\n";
+        file.close();
+
+        file.open("dos_trunc_W" + std::to_string(P.anderson_W*SCALE) + "_B" + std::to_string(P.mult) + ".dat");
+        for(unsigned i = 0; i < N_energies; i++)
+            file << P.energies(i) << " " << dos_jack_trunc(i) << "\n";
+        file.close();
     }
-    
-     //Save to file
-    std::ofstream file;
-    //file.open("dos_green1.dat");
-    unsigned N_energies = energies.size();
-    //for(unsigned i = 0; i < N_energies; i++)
-        //file << energies(i) << " " << dos_green1(i) << "\n";
-    //file.close();
-
-    //file.open("dos_green1_trunc.dat");
-    //for(unsigned i = 0; i < N_energies; i++)
-        //file << energies(i) << " " << dos_green1_trunc(i) << "\n";
-    //file.close();
-
-    //file.open("dos_green2.dat");
-    //for(unsigned i = 0; i < N_energies; i++)
-        //file << energies(i) << " " << dos_green2(i) << "\n";
-    //file.close();
-
-    //file.open("dos_green2_trunc.dat");
-    //for(unsigned i = 0; i < N_energies; i++)
-        //file << energies(i) << " " << dos_green2_trunc(i) << "\n";
-    //file.close();
-
-    file.open("dos_W" + std::to_string(W*SCALE) + "_B" + std::to_string(mult) + ".dat");
-    for(unsigned i = 0; i < N_energies; i++)
-        file << energies(i) << " " << dos_jack(i) << "\n";
-    file.close();
-
-    file.open("dos_trunc_W" + std::to_string(W*SCALE) + "_B" + std::to_string(mult) + ".dat");
-    for(unsigned i = 0; i < N_energies; i++)
-        file << energies(i) << " " << dos_jack_trunc(i) << "\n";
-    file.close();
     return 0;
 }
 

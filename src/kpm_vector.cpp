@@ -57,7 +57,9 @@ KPM_vector::KPM_vector(unsigned lx, unsigned ly, unsigned norb){
 }
 
 KPM_vector::~KPM_vector(){
+    debug_message("Entered KPM_vector destructor.\n");
     delete []KPM;
+    debug_message("Left KPM_vector destructor.\n");
 }
 
 void KPM_vector::zero(){
