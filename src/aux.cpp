@@ -100,14 +100,15 @@ Eigen::Array<TR, -1, -1> calc_dos(Eigen::Array<TR, -1, -1> mu, Eigen::Array<TR, 
 }
 
 template <typename T>
-bool is_numeric (std::string const & str){
-    auto result = T();
-    auto i = std::istringstream(str);
+bool is_numeric (std::string & str){
+    //auto result = T();
+    //auto i = std::istringstream(str);
 
-    i >> result;
-    i >> std::ws;
+    //i >> result;
+    //i >> std::ws;
 
-    return !i.fail() && i.eof();
+    //return !i.fail() && i.eof();
+    return true;
 }
 
 void parse_input(int argc, char **argv, parameters *P){ 

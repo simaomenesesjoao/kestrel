@@ -29,7 +29,10 @@ namespace {
 } 
 
 
+
 int main(int argc, char **argv){
+    std::signal(SIGUSR1, signal_handler);
+    shutdown_handler = [&](int signal) {  };
 
     // Parse input from the command line
     parameters P;
@@ -84,7 +87,6 @@ int main(int argc, char **argv){
 
     // Set the external signal handler to use a method from the 
     // Chebyshev object
-    std::signal(SIGUSR1, signal_handler);
     shutdown_handler = [&](int signal) { C.calc_finish(); };
 
     // There two are not required for the computation, but are used 
