@@ -26,7 +26,6 @@ class chebinator{
         void set_seed(int);
         void set_mult(int);
         void save(std::string);
-        void load(std::string);
 
         double get_estimate(double, unsigned, unsigned, unsigned);
         void calc_finish();

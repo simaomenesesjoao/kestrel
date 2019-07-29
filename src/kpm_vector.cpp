@@ -24,8 +24,8 @@ KPM_vector& KPM_vector::operator=(const KPM_vector& other){
     bool c2 = other.Lx==Lx;
     bool c3 = other.Ly==Ly;
     if(!(c1 && c2 && c3)){
-        std::cout << "Cannot copy.\n";
-    
+        std::cout << "Cannot copy. Aborting.\n";
+        exit(1);
     }
     for(unsigned orb = 0; orb < Norb; orb++){
         KPM[orb] = other.KPM[orb];

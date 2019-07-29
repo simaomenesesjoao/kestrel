@@ -125,7 +125,7 @@ void parse_input(int argc, char **argv, parameters *P){
     std::string *p_readfrom, *p_saveto;                 // restart
     std::string *p_help;                                // help
     std::string *p_moremoments;
-
+    std::string *p_print_to_cout, *p_print_to_file;
 
     // find the pointers to each of the quantities
     p_geometry    = std::find(inputs, inputs+argc-1, "--geometry");
@@ -145,6 +145,10 @@ void parse_input(int argc, char **argv, parameters *P){
     p_saveto      = std::find(inputs, inputs+argc-1, "--save_restart_to");
     p_help        = std::find(inputs, inputs+argc-1, "--help");
 
+    p_print_to_cout = std::find(inputs, inputs+argc-1, "--print_to_cout");
+    p_print_to_file = std::find(inputs, inputs+argc-1, "--print_to_file");
+
+
 
     // Check which of the possible quantities has been defined 
     // through the command line
@@ -153,6 +157,7 @@ void parse_input(int argc, char **argv, parameters *P){
     bool need_read, need_write, need_help;
     bool found_NEnergies, found_energies;
     bool need_moremoments;
+    bool need_print_to_file, need_print_to_cout, need_print;
 
     std::string *p_final = inputs + argc - 1;
 
@@ -172,6 +177,14 @@ void parse_input(int argc, char **argv, parameters *P){
     need_write       = p_saveto      != p_final;
     need_help        = p_help        != p_final;
     need_moremoments = p_moremoments != p_final;
+
+    need_print_to_file = p_print_to_file != p_final;
+    need_print_to_cout = p_print_to_cout != p_final;
+    need_print         = need_print_to_file || need_print_to_cout;
+
+    P->need_print_to_file = need_print_to_file;
+    P->need_print_to_cout = need_print_to_cout;
+    P->need_print = need_print;
 
     // Check if the input from the command line is complete
     bool has_any_cheb, has_any_ham, has_any_cl_input;
@@ -193,7 +206,20 @@ void parse_input(int argc, char **argv, parameters *P){
         exit(0);
     }
 
-    // Cannot ask to used the quantities specified by the command 
+    if(need_print && !output_energies){
+        std::cout << "Printing was requested but no energies were specified. "
+            "Please specify --energies or --NEnergies when using --print_to_cout "
+            "or --print_to_file. Aborting.\n";
+        exit(1);
+    }
+    if(!need_print && output_energies){
+        std::cout << "Printing was not requested but energies were specified. "
+            "Please specify --print_to_file or --print_to_cout when using "
+            "--energies or --NEnergies. Aborting.\n";
+        exit(1);
+    }
+
+    // Cannot ask to use the quantities specified by the command 
     // line (calculate new) if you're also fetching these quantities
     // from the input file
     if(has_any_cl_input && need_read){
@@ -343,7 +369,7 @@ void parse_input(int argc, char **argv, parameters *P){
         file->close();
         delete file;
 
-        std::cout << "must read from";
+        //std::cout << "must read from";
     }
 
 
@@ -367,9 +393,10 @@ void parse_input(int argc, char **argv, parameters *P){
 
     // the number of energies has been specified
     if(output_energies){
+        const double lim = 0.999;
         if(!found_energies && found_NEnergies){
             P->NEnergies = atoi((*(p_NEnergies+1)).c_str());
-            P->energies  = Eigen::Array<TR, -1, 1>::LinSpaced(P->NEnergies, -1, 1);
+            P->energies  = Eigen::Array<TR, -1, 1>::LinSpaced(P->NEnergies, -lim, lim)*SCALE;
         }
 
         // Specific values of the energies have been specified
@@ -397,7 +424,9 @@ void parse_input(int argc, char **argv, parameters *P){
                    current == p_help or
                    current == p_readfrom or
                    current == p_saveto or
-                   current == p_moremoments){
+                   current == p_moremoments or
+                   current == p_print_to_cout or
+                   current == p_print_to_file){
                     break;
                 }
                 n_energies++;
@@ -463,19 +492,29 @@ void extended_euclidean(int a, int b, int *x, int *y, int *gcd){
 }
 
 void load(std::string name, KPM_vector *KPM0, KPM_vector *KPM1, Eigen::Array<TR, -1, -1> *mu){
-    debug_message("Entered chebinator::load\n");
+    debug_message("Entered load\n");
 
     H5::H5File * file = new H5::H5File(name, H5F_ACC_RDWR);
 
-    Eigen::Array<TR, -1, -1> mu1;
-    unsigned moms;
 
+    verbose2("Reading number of moments from restart file.\n");
+    unsigned moms;
     get_hdf5(&moms, file, (char *) "/num_moments");
+    verbose2("number of moments: " << moms);
+
+    verbose2("Reading MU array from restart file.\n");
+    Eigen::Array<TR, -1, -1> mu1;
+    //std::cout << "before allocation\n" << std::flush; 
     mu1 = Eigen::Array<TR, -1, -1>::Zero(moms, 1);
+    //std::cout << "before get_hdf\n" << std::flush; 
     get_hdf5(mu1.data(), file, (char *) "/MU");
 
+    //std::cout << "before copy\n" << std::flush; 
     *mu = mu1;
+    //std::cout << "after copy\n" << std::flush; 
 
+
+    verbose2("Reading KPM vectors from restart file.\n");
     unsigned Norb = 2;
     for(unsigned n = 0; n < Norb; n++){
         std::string name1 = "/KPM0_" + std::to_string(n);
@@ -483,10 +522,12 @@ void load(std::string name, KPM_vector *KPM0, KPM_vector *KPM1, Eigen::Array<TR,
         get_hdf5(KPM0->KPM[n].data(), file, name1);
         get_hdf5(KPM1->KPM[n].data(), file, name2);
     }
+
+
     file->close();
     delete file;
 
-    debug_message("Left chebinator::load\n");
+    debug_message("Left load\n");
 };
 
 double jackson(unsigned n, unsigned N){
@@ -503,19 +544,27 @@ void print_ham_info(parameters P){
     verbose1("Ly:                  " + std::to_string(P.Ly)           + "\n");
     verbose1("mult:                " + std::to_string(P.mult)         + "\n");
     verbose1("seed:                " + std::to_string(P.seed)         + "\n");
-    verbose1("anderson:            " + std::to_string(P.anderson_W*SCALE)      + "\n");
+    verbose1("anderson:            " + std::to_string(P.anderson_W)   + "\n");
 }
 void print_cheb_info(parameters P){
     verbose1("______Cheb iteration parameters_______\n");
     verbose1("num random:          " + std::to_string(P.nrandom)   + "\n");
     verbose1("num disorder:        " + std::to_string(P.ndisorder) + "\n");
-    verbose1("num moments:         " + std::to_string(P.nmoments)      + "\n");
+    unsigned moments_to_calculate = P.nmoments;
+    if(P.need_read){
+        moments_to_calculate = P.moremoments;
+        verbose1("num moments to calc: " + std::to_string(moments_to_calculate) + "\n");
+        verbose1("total num moments:   " + std::to_string(moments_to_calculate + P.nmoments) + "\n");
+    } else {
+        verbose1("num moments:         " + std::to_string(moments_to_calculate) + "\n");
+    }
 }
 
 void print_compilation_info(){
     verbose1("_______Compilation parameters_______\n");
     verbose1("STRIDE: " << STRIDE << "\n");
     verbose1("VERBOSE: " << VERBOSE << "\n");
+    verbose1("SCALE: " << SCALE << "\n");
 }
 
 void print_magnetic_info(parameters P, int M12, int M21, int min_flux){

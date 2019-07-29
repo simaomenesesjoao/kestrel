@@ -24,6 +24,8 @@ struct parameters{
     std::string filename_read;
     std::string filename_write;
 
+    bool need_print_to_file, need_print_to_cout, need_print;
+
 };
 void parse_input(int argc, char **argv, parameters*);
 void load(std::string, KPM_vector *, KPM_vector *, Eigen::Array<TR, -1, -1> *);

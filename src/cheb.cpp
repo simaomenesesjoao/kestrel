@@ -55,9 +55,11 @@ void chebinator::cheb_iteration_restart(unsigned n, KPM_vector &KPM0_restart, KP
 
 
 
+    unsigned previous_moments = mu_restart.size();
     unsigned moments = n;
-    mu = Eigen::Array<TR, -1, -1>::Zero(moments, 1);
-    mu(0) = 1.0;
+    unsigned total_moments = previous_moments + moments;
+    current_moments = total_moments;
+    max_iter = moments;
 
 
     // These two steps are needed so that the disorder realization
@@ -68,25 +70,18 @@ void chebinator::cheb_iteration_restart(unsigned n, KPM_vector &KPM0_restart, KP
     KPM_initial.empty_ghosts();
 
     //load(name);
-    unsigned previous_moments = mu_restart.size();
-    max_iter = moments + previous_moments;
 
     KPM0 = KPM0_restart;
     KPM1 = KPM1_restart;
-    mu = Eigen::Array<TR, -1, -1>::Zero(previous_moments + n, 1);
+    mu = Eigen::Array<TR, -1, -1>::Zero(total_moments, 1);
     mu.block(0,0,previous_moments,1) = mu_restart;
 
-    //Eigen::Array<TR, -1, -1> mu_new = mu;
-    //std::cout << "previous_moments: " << previous_moments << "\n";
-    current_moments = max_iter;
 
-    //std::cout << "mu:\n" << mu << "\n";
-    //std::cout << "KPM0[0]" << KPM0.KPM[0] << "\n";
     // only after the seed has been used, load the vectors
 
 
 
-    for(unsigned i = previous_moments; i < previous_moments + moments; i++){
+    for(unsigned i = previous_moments; i < total_moments; i++){
         debug_message("cheb iteration " + std::to_string(i) + "\n");
         //std::cout << "iteration: " << i << "\n";
         //std::cout << "Before H\n";
@@ -102,7 +97,7 @@ void chebinator::cheb_iteration_restart(unsigned n, KPM_vector &KPM0_restart, KP
         KPM0.fill_ghosts();
         mu(i) = KPM_initial*KPM0;
 
-        current_iter = i;
+        current_iter = i - previous_moments;
         current = std::chrono::high_resolution_clock::now();
     }
     debug_message("Left cheb_iteration\n");
@@ -190,7 +185,8 @@ void chebinator::save(std::string name){
     write_hdf5(&(H->Lx), file1, "/Lx");
     write_hdf5(&(H->Ly), file1, "/Ly");
     write_hdf5(&(H->Norb), file1, "/Norb");
-    write_hdf5(&(H->W), file1, "/anderson_w");
+    double anderson_w = H->W*SCALE;
+    write_hdf5(&anderson_w, file1, "/anderson_w");
     write_hdf5(&mult, file1, "/mult");
 
     // Save information about the Chebyshev object
@@ -212,32 +208,6 @@ void chebinator::save(std::string name){
     debug_message("Left chebinator::save\n");
 }
 
-void chebinator::load(std::string name){
-    debug_message("Entered chebinator::load\n");
-
-    H5::H5File * file = new H5::H5File(name, H5F_ACC_RDWR);
-
-    Eigen::Array<TR, -1, -1> mu1;
-    unsigned moms;
-
-    get_hdf5(&moms, file, (char *) "/num_moments");
-    mu1 = Eigen::Array<TR, -1, -1>::Zero(moms, 1);
-    get_hdf5(mu1.data(), file, (char *) "/MU");
-
-    mu = mu1;
-
-    for(unsigned n = 0; n < H->Norb; n++){
-        std::string name1 = "/KPM0_" + std::to_string(n);
-        std::string name2 = "/KPM1_" + std::to_string(n);
-        get_hdf5(KPM0.KPM[n].data(), file, name1);
-        get_hdf5(KPM1.KPM[n].data(), file, name2);
-    }
-    file->close();
-    delete file;
-
-    debug_message("Left chebinator::load\n");
-}
-
 void chebinator::calc_finish(){
     debug_message("Entered chebinator::calc_finish()\n");
     /* Prints information about the current state of the program to the user's
@@ -252,10 +222,11 @@ void chebinator::calc_finish(){
     double avg_iter_time = time_span.count()/current_iter;
 
     // Append to a file in the user's home directory
-    const char *homedir;
-    homedir = getenv("HOME");
+    //const char *homedir;
+    //homedir = getenv("HOME");
     std::ofstream file;
-    file.open(std::string(homedir) + "/kestrel_info.txt", std::ofstream::app);
+    //file.open(std::string(homedir) + "/kestrel_info.txt", std::ofstream::app);
+    file.open(std::string("kestrel_info.txt"));
 
     // Output the information about the program
     const char *id = getenv("PBS_JOBID");

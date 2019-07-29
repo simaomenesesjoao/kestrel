@@ -21,6 +21,7 @@
 // https://stackoverflow.com/questions/11468414/using-auto-and-lambda-to-handle-signal
 //
 
+void print_dos(parameters P, unsigned N_lists, unsigned *nmoments_list, Eigen::Array<TR, -1, -1> *dos);
 
 namespace {
     std::function<void(int)> shutdown_handler;
@@ -35,7 +36,7 @@ int main(int argc, char **argv){
     parse_input(argc, argv, &P);
 
     // Rescale the relevant quantities
-    P.anderson_W = P.anderson_W/SCALE;
+    //P.anderson_W = P.anderson_W/SCALE;
     P.energies = P.energies/SCALE;
 
     // Calculate the compatible magnetic fields and
@@ -72,9 +73,8 @@ int main(int argc, char **argv){
     hamiltonian H;
     H.set_geometry(P.Lx, P.Ly);
     H.set_regular_hoppings();
-    H.set_anderson_W(P.anderson_W);
+    H.set_anderson_W(P.anderson_W/SCALE);
     H.set_peierls(gauge_matrix);
-    double time = H.time_H();
 
 
     // Chebyshev object to iterate KPM vectors with the
@@ -93,17 +93,23 @@ int main(int argc, char **argv){
     C.set_mult(P.mult);
 
     // Estimate the time for completion
-    double estimate = C.get_estimate(time, P.nmoments, P.ndisorder, P.nrandom);
+    double time = H.time_H();
+    unsigned moments_to_process = P.nmoments;
+    if(P.need_read) moments_to_process = P.moremoments;
+    double estimate = C.get_estimate(time, moments_to_process, P.ndisorder, P.nrandom);
     verbose1("Estimated time for completion: " << estimate << " seconds.\n");
 
     if(P.need_read){
+        verbose2("Need read\n");
         KPM_vector KPM0, KPM1;
         KPM0.set_geometry(H.Lx, H.Ly, H.Norb);
         KPM1.set_geometry(H.Lx, H.Ly, H.Norb);
         Eigen::Array<TR, -1, -1> mu1;
-        load(P.filename_read, &C.KPM0, &C.KPM1, &mu1);
+        load(P.filename_read, &KPM0, &KPM1, &mu1);
+
         C.cheb_iteration_restart(P.moremoments, KPM0, KPM1, mu1);
     } else {
+        verbose2("Doesn't need read\n");
         C.cheb_iteration(P.nmoments, P.ndisorder, P.nrandom);
     }
 
@@ -114,56 +120,79 @@ int main(int argc, char **argv){
 
 
 
-    Eigen::Array<TR, -1, -1> mu(P.nmoments,1);
+    Eigen::Array<TR, -1, -1> mu;
     mu = C.mu;
     verbose2("Finished Chebychev iterations\n");
 
 
 
+    if(P.need_print){
+        const unsigned N_lists = 2;
+        Eigen::Array<TR, -1, -1> *dos_list, *mu_list;
+        unsigned *nmoments_list;
+        dos_list = new Eigen::Array<TR, -1, -1>[N_lists];
+        mu_list  = new Eigen::Array<TR, -1, -1>[N_lists];
+        nmoments_list = new unsigned[N_lists];
 
-    if(P.output_energies){
-        // shorten the mu matrix if so desired (to assess convergence)
-        unsigned moments_trunc = P.nmoments/2;
-        Eigen::Array<TR, -1, -1> mu_trunc(moments_trunc, 1);
-        mu_trunc = mu.block(0, 0, moments_trunc, 1);
+        unsigned total_moments = P.nmoments;
+        if(P.need_read) total_moments += P.moremoments;
 
-        // Calculate the density of states
-        Eigen::Array<TR, -1, -1> dos_jack, dos_jack_trunc;
-        dos_jack            = calc_dos(mu,       P.energies, "jackson");
-        dos_jack_trunc      = calc_dos(mu_trunc, P.energies, "jackson");
+        nmoments_list[0] = total_moments;
+        nmoments_list[1] = total_moments/2;
+        mu_list[0] = mu.block(0,0,total_moments,1);
+        mu_list[1] = mu.block(0,0,total_moments/2,1);
 
-        P.energies *= SCALE;
-
+        for(unsigned i = 0; i < N_lists; i++){
+            dos_list[i] = calc_dos(mu_list[i], P.energies, "jackson");
+        }
+        delete []mu_list;
         verbose2("Finished calculating DoS\n");
-        for(unsigned i = 0; i < dos_jack.size(); i++){
+
+
+        print_dos(P, N_lists, nmoments_list, dos_list);
+        delete []dos_list;
+        delete []nmoments_list;
+    }
+    return 0;
+}
+
+
+void print_dos(parameters P, unsigned N_lists, unsigned *nmoments_list, Eigen::Array<TR, -1, -1> *dos){
+    unsigned N_energies = dos[0].size(); // They all have the same number of points
+
+    if(P.need_print_to_cout){
+        std::cout << "________Density of states________\n";
+        for(unsigned i = 0; i < N_energies; i++){
             std::string metadata;
             metadata  = "Lx:" + std::to_string(P.Lx);
             metadata += " Ly:" + std::to_string(P.Ly);
             metadata += " Bmult:" + std::to_string(P.mult);
             metadata += " nrandom:" + std::to_string(P.nrandom);
             metadata += " ndisorder:" + std::to_string(P.ndisorder);
+            metadata += " W:" + std::to_string(P.anderson_W);
             metadata += " seed:" + std::to_string(P.seed);
 
-
-            std::cout << metadata << " N:" << P.nmoments << " en:" << P.energies(i) << " dos:" << dos_jack(i) << "\n";
-            std::cout << metadata << " N:" << moments_trunc << " en:" << P.energies(i) << " dos:" << dos_jack_trunc(i) << "\n";
+            for(unsigned j = 0; j < N_lists; j++){
+                std::cout << metadata << " N:" << nmoments_list[j] << " en:" << P.energies(i)*SCALE << " dos:" << dos[j](i) << "\n";
+            }
         }
-        
+    }
+    
+    if(P.need_print_to_file){
+
          //Save to file
         std::ofstream file;
-        //file.open("dos_green1.dat");
-        unsigned N_energies = P.energies.size();
 
-        file.open("dos_W" + std::to_string(P.anderson_W*SCALE) + "_B" + std::to_string(P.mult) + ".dat");
-        for(unsigned i = 0; i < N_energies; i++)
-            file << P.energies(i) << " " << dos_jack(i) << "\n";
-        file.close();
+        for(unsigned j = 0; j < N_lists; j++){
+            std::string name;
+            name = "dos_N" + std::to_string(nmoments_list[j]) + "_W" + std::to_string(P.anderson_W) + "_B" + std::to_string(P.mult) + ".dat";
+            file.open(name);
+            for(unsigned i = 0; i < N_energies; i++)
+                file << P.energies(i)*SCALE << " " << dos[j](i) << "\n";
+            file.close();
+        }
 
-        file.open("dos_trunc_W" + std::to_string(P.anderson_W*SCALE) + "_B" + std::to_string(P.mult) + ".dat");
-        for(unsigned i = 0; i < N_energies; i++)
-            file << P.energies(i) << " " << dos_jack_trunc(i) << "\n";
-        file.close();
     }
-    return 0;
-}
 
+    if(!P.need_print) std::cout << "Nothing to print.\n";
+}
