@@ -28,11 +28,6 @@
 #endif
 
 
-
-
-
-
-
 #define SCALE 3.5
 
 typedef double TR;

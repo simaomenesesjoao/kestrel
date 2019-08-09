@@ -196,23 +196,15 @@ double hamiltonian::time_H(){
 
 void hamiltonian::H(KPM_vector &KPM_new, KPM_vector &KPM_old, unsigned f){
     debug_message("Entered hamiltonian::H\n");
-    
-    //std::cout << "information about the vectors coming in\n";
-    //std::cout << KPM_new.KPM[0].rows() << " " << KPM_new.KPM[0].cols() << "\n";
-    //std::cout << KPM_new.KPM[1].rows() << " " << KPM_new.KPM[1].cols() << "\n";
-    //std::cout << KPM_old.KPM[0].rows() << " " << KPM_old.KPM[0].cols() << "\n";
-    //std::cout << KPM_old.KPM[1].rows() << " " << KPM_old.KPM[1].cols() << "\n";
 
     for(unsigned i=0; i < Lx; i+=STRIDE){
         for(unsigned j=0; j < Ly; j+=STRIDE){
-            //std::cout << "i:" << i << " j:" << j << "\n" << std::flush;
             unsigned final_i = std::min(i + STRIDE, Lx) - i;
             unsigned final_j = std::min(j + STRIDE, Ly) - j;
-            //std::cout << "fi:" << final_i << " fj:" << final_j << "\n" << std::flush;
 
             // Anderson disorder for each orbital
-            //KPM_new.KPM[0].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[0].block(1+j, 1+i, final_j, final_i)*anderson[0].block(j, i, final_j, final_i)*f;
-            //KPM_new.KPM[1].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[1].block(1+j, 1+i, final_j, final_i)*anderson[1].block(j, i, final_j, final_i)*f;
+            KPM_new.KPM[0].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[0].block(1+j, 1+i, final_j, final_i)*anderson[0].block(j, i, final_j, final_i)*f;
+            KPM_new.KPM[1].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[1].block(1+j, 1+i, final_j, final_i)*anderson[1].block(j, i, final_j, final_i)*f;
 
             // Regular hoppings
             KPM_new.KPM[0].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[1].block(1+j, 1+i, final_j, final_i)*hoppings[0].block(j, i, final_j, final_i)*f;

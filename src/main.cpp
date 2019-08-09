@@ -3,11 +3,14 @@
 #include <csignal>
 #include <exception>
 #include <chrono>
+#include <thread>
 #include <algorithm>
 #include <fstream>
 #include <Eigen/Dense>
 #include <H5Cpp.h>
 #include <H5Group.h>
+
+#include "tcp_client.hpp"
 
 #include "general.hpp"
 #include "kpm_vector.hpp"
@@ -17,20 +20,8 @@
 #include "ComplexTraits.hpp"
 #include "myHDF5.hpp"
 
-//
-// https://stackoverflow.com/questions/11468414/using-auto-and-lambda-to-handle-signal
-//
 
-void print_dos(parameters P, unsigned N_lists, unsigned *nmoments_list, Eigen::Array<TR, -1, -1> *dos);
-
-namespace {
-    std::function<void(int)> shutdown_handler;
-    void signal_handler(int signal) { shutdown_handler(signal); }
-} 
-
-
-int main(int argc, char **argv){
-
+int calculation(int argc, char **argv, variables *vars){
     // Parse input from the command line
     parameters P;
     parse_input(argc, argv, &P);
@@ -38,6 +29,17 @@ int main(int argc, char **argv){
     // Rescale the relevant quantities
     //P.anderson_W = P.anderson_W/SCALE;
     P.energies = P.energies/SCALE;
+
+    // Set the unchangeable information that is going to 
+    // be transmited to the TCP server
+    vars->Lx = P.Lx;
+    vars->Ly = P.Ly;
+    vars->nrandom = P.nrandom;
+    vars->ndisorder = P.ndisorder;
+    vars->nmoments = P.nmoments;
+    vars->mult = P.mult;
+    vars->seed = P.seed;
+    vars->anderson_W = P.anderson_W;
 
     // Calculate the compatible magnetic fields and
     // the minimum magnetic flux allowed
@@ -55,6 +57,7 @@ int main(int argc, char **argv){
     print_ham_info(P);
     print_magnetic_info(P, M12, M21, min_flux);
     print_cheb_info(P);
+    print_log_info(P);
     print_output_info(P);
     print_restart_info(P);
 
@@ -82,15 +85,13 @@ int main(int argc, char **argv){
     chebinator C;
     C.set_hamiltonian(&H);
 
-    // Set the external signal handler to use a method from the 
-    // Chebyshev object
-    std::signal(SIGUSR1, signal_handler);
-    shutdown_handler = [&](int signal) { C.calc_finish(); };
-
     // There two are not required for the computation, but are used 
     // to obtain output information about the program
     C.set_seed(P.seed);
     C.set_mult(P.mult);
+    C.P = P;
+    C.vars = vars;
+    // Logging system status
 
     // Estimate the time for completion
     double time = H.time_H();
@@ -98,6 +99,18 @@ int main(int argc, char **argv){
     if(P.need_read) moments_to_process = P.moremoments;
     double estimate = C.get_estimate(time, moments_to_process, P.ndisorder, P.nrandom);
     verbose1("Estimated time for completion: " << estimate << " seconds.\n");
+
+
+    // Add the time estimate to vars and the current initial status. 
+    // After this, the 'initialized' flag may be set to true.
+    vars->avg_time = time;
+    vars->max_iter = moments_to_process;
+    vars->iter = 0;
+    vars->has_initialized = true;
+    vars->update_status();
+
+
+
 
     if(P.need_read){
         verbose2("Need read\n");
@@ -153,46 +166,28 @@ int main(int argc, char **argv){
         delete []dos_list;
         delete []nmoments_list;
     }
+
+    vars->has_finished = true;
+    vars->update_status();
+    vars->status = "1 1 finished";
     return 0;
 }
 
 
-void print_dos(parameters P, unsigned N_lists, unsigned *nmoments_list, Eigen::Array<TR, -1, -1> *dos){
-    unsigned N_energies = dos[0].size(); // They all have the same number of points
 
-    if(P.need_print_to_cout){
-        std::cout << "________Density of states________\n";
-        for(unsigned i = 0; i < N_energies; i++){
-            std::string metadata;
-            metadata  = "Lx:" + std::to_string(P.Lx);
-            metadata += " Ly:" + std::to_string(P.Ly);
-            metadata += " Bmult:" + std::to_string(P.mult);
-            metadata += " nrandom:" + std::to_string(P.nrandom);
-            metadata += " ndisorder:" + std::to_string(P.ndisorder);
-            metadata += " W:" + std::to_string(P.anderson_W);
-            metadata += " seed:" + std::to_string(P.seed);
+int main(int argc, char **argv){
 
-            for(unsigned j = 0; j < N_lists; j++){
-                std::cout << metadata << " N:" << nmoments_list[j] << " en:" << P.energies(i)*SCALE << " dos:" << dos[j](i) << "\n";
-            }
-        }
-    }
-    
-    if(P.need_print_to_file){
+    variables vars;
+    vars.status = "0 0 initializing";
+    std::string *shared_str = &vars.status;
 
-         //Save to file
-        std::ofstream file;
+    std::thread thread1(tcp_client, shared_str);
+    std::thread thread2(calculation, argc, argv, &vars);
 
-        for(unsigned j = 0; j < N_lists; j++){
-            std::string name;
-            name = "dos_N" + std::to_string(nmoments_list[j]) + "_W" + std::to_string(P.anderson_W) + "_B" + std::to_string(P.mult) + ".dat";
-            file.open(name);
-            for(unsigned i = 0; i < N_energies; i++)
-                file << P.energies(i)*SCALE << " " << dos[j](i) << "\n";
-            file.close();
-        }
+    thread2.join();
+    thread1.join();
 
-    }
-
-    if(!P.need_print) std::cout << "Nothing to print.\n";
+    return 0;
 }
+
+

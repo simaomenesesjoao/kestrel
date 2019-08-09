@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <Eigen/Dense>
 #include <H5Cpp.h>
@@ -12,6 +13,45 @@
 #include "myHDF5.hpp"
 #include "messages.hpp"
 
+void print_dos(parameters P, unsigned N_lists, unsigned *nmoments_list, Eigen::Array<TR, -1, -1> *dos){
+    unsigned N_energies = dos[0].size(); // They all have the same number of points
+
+    if(P.need_print_to_cout){
+        std::cout << "________Density of states________\n";
+        for(unsigned i = 0; i < N_energies; i++){
+            std::string metadata;
+            metadata  = "Lx:" + std::to_string(P.Lx);
+            metadata += " Ly:" + std::to_string(P.Ly);
+            metadata += " Bmult:" + std::to_string(P.mult);
+            metadata += " nrandom:" + std::to_string(P.nrandom);
+            metadata += " ndisorder:" + std::to_string(P.ndisorder);
+            metadata += " W:" + std::to_string(P.anderson_W);
+            metadata += " seed:" + std::to_string(P.seed);
+
+            for(unsigned j = 0; j < N_lists; j++){
+                std::cout << metadata << " N:" << nmoments_list[j] << " en:" << P.energies(i)*SCALE << " dos:" << dos[j](i) << "\n";
+            }
+        }
+    }
+    
+    if(P.need_print_to_file){
+
+         //Save to file
+        std::ofstream file;
+
+        for(unsigned j = 0; j < N_lists; j++){
+            std::string name;
+            name = "dos_N" + std::to_string(nmoments_list[j]) + "_W" + std::to_string(P.anderson_W) + "_B" + std::to_string(P.mult) + ".dat";
+            file.open(name);
+            for(unsigned i = 0; i < N_energies; i++)
+                file << P.energies(i)*SCALE << " " << dos[j](i) << "\n";
+            file.close();
+        }
+
+    }
+
+    if(!P.need_print) std::cout << "Nothing to print.\n";
+}
 
 Eigen::Array<TR, -1, -1> calc_dos(Eigen::Array<TR, -1, -1> mu, Eigen::Array<TR, -1, -1> energies, std::string mode){
     debug_message("Entered calc_dos\n");
@@ -126,6 +166,7 @@ void parse_input(int argc, char **argv, parameters *P){
     std::string *p_help;                                // help
     std::string *p_moremoments;
     std::string *p_print_to_cout, *p_print_to_file;
+    std::string *p_log_status;
 
     // find the pointers to each of the quantities
     p_geometry    = std::find(inputs, inputs+argc-1, "--geometry");
@@ -148,6 +189,9 @@ void parse_input(int argc, char **argv, parameters *P){
     p_print_to_cout = std::find(inputs, inputs+argc-1, "--print_to_cout");
     p_print_to_file = std::find(inputs, inputs+argc-1, "--print_to_file");
 
+    p_log_status    = std::find(inputs, inputs+argc-1, "--log_status");
+
+
 
 
     // Check which of the possible quantities has been defined 
@@ -158,6 +202,7 @@ void parse_input(int argc, char **argv, parameters *P){
     bool found_NEnergies, found_energies;
     bool need_moremoments;
     bool need_print_to_file, need_print_to_cout, need_print;
+    bool need_log_status;
 
     std::string *p_final = inputs + argc - 1;
 
@@ -182,9 +227,15 @@ void parse_input(int argc, char **argv, parameters *P){
     need_print_to_cout = p_print_to_cout != p_final;
     need_print         = need_print_to_file || need_print_to_cout;
 
+
     P->need_print_to_file = need_print_to_file;
     P->need_print_to_cout = need_print_to_cout;
     P->need_print = need_print;
+
+    need_log_status    = p_log_status != p_final;
+    P->need_log_status = need_log_status;
+    P->filename_status = "status";
+
 
     // Check if the input from the command line is complete
     bool has_any_cheb, has_any_ham, has_any_cl_input;
@@ -393,7 +444,7 @@ void parse_input(int argc, char **argv, parameters *P){
 
     // the number of energies has been specified
     if(output_energies){
-        const double lim = 0.999;
+        const double lim = 0.2;
         if(!found_energies && found_NEnergies){
             P->NEnergies = atoi((*(p_NEnergies+1)).c_str());
             P->energies  = Eigen::Array<TR, -1, 1>::LinSpaced(P->NEnergies, -lim, lim)*SCALE;
@@ -589,13 +640,22 @@ void print_output_info(parameters P){
 }
 
 
+void print_log_info(parameters P){
+    verbose1("____________Log info____________\n");
+    if(P.need_log_status){
+        verbose1("Log being saved to directory: " << P.filename_status << "\n");
+    } else {
+        verbose1("No logging information requested.\n");
+    }
+
+}
 
 void print_restart_info(parameters P){
     verbose1("____________Restart info____________\n");
     if(P.need_read){
         verbose1("Reading restart file " << P.filename_read << ".\n");
         if(P.need_moremoments){
-            verbose1("Calculating " << P.moremoments << "more moments.\n");
+            verbose1("Calculating " << P.moremoments << " more moments.\n");
         }
     } else {
         verbose1("Reading from restart file not requested.\n");
@@ -607,3 +667,6 @@ void print_restart_info(parameters P){
     }
 
 }
+
+
+

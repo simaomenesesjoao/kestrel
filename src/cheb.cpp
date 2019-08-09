@@ -4,8 +4,11 @@
 #include <iostream>
 #include <complex>
 
+#include "tcp_client.hpp"
+
 #include "general.hpp"
 #include "kpm_vector.hpp"
+#include "aux.hpp"
 #include "hamiltonian.hpp"
 #include "cheb.hpp"
 
@@ -14,9 +17,10 @@
 #include "ComplexTraits.hpp"
 #include "myHDF5.hpp"
 
+
 chebinator::chebinator(){
     debug_message("Entered chebinator constructor\n");
-    ;
+    initialized = false;
     debug_message("Left chebinator constructor\n");
 };
 
@@ -37,6 +41,7 @@ void chebinator::set_hamiltonian(hamiltonian *new_H){
     KPM_initial.set_geometry(Lx, Ly, Norb);
 
 }
+
 
 
 void chebinator::cheb_iteration_restart(unsigned n, KPM_vector &KPM0_restart, KPM_vector &KPM1_restart, Eigen::Array<TR, -1, -1> mu_restart){
@@ -62,6 +67,7 @@ void chebinator::cheb_iteration_restart(unsigned n, KPM_vector &KPM0_restart, KP
     max_iter = moments;
 
 
+    vars->max_iter = max_iter;
     // These two steps are needed so that the disorder realization
     // and the initial random vectors are the same
     H->set_anderson();
@@ -81,17 +87,11 @@ void chebinator::cheb_iteration_restart(unsigned n, KPM_vector &KPM0_restart, KP
 
 
 
+    std::chrono::duration<double> time_span;
+    double time_count = 0.0;
+    double avg_iter_time = 0.0;
     for(unsigned i = previous_moments; i < total_moments; i++){
         debug_message("cheb iteration " + std::to_string(i) + "\n");
-        //std::cout << "iteration: " << i << "\n";
-        //std::cout << "Before H\n";
-        //std::cout << "KPM0.0:\n" << KPM0.KPM[0] << "\n";
-        //std::cout << "KPM1.0:\n" << KPM1.KPM[0] << "\n";
-
-        H->cheb(KPM1, KPM0, i);
-        //std::cout << "after H\n";
-        //std::cout << "KPM0.0:\n" << KPM0.KPM[0] << "\n";
-        //std::cout << "KPM1.0:\n" << KPM1.KPM[0] << "\n";
 
         swap_pointers(&KPM1, &KPM0);
         KPM0.fill_ghosts();
@@ -99,15 +99,21 @@ void chebinator::cheb_iteration_restart(unsigned n, KPM_vector &KPM0_restart, KP
 
         current_iter = i - previous_moments;
         current = std::chrono::high_resolution_clock::now();
+
+        time_span = std::chrono::duration_cast<std::chrono::duration<double>>(current - start);
+        avg_iter_time = time_span.count()/(1+current_iter);
+
+        vars->avg_time = time_span.count()/(1+current_iter); 
+        vars->iter = current_iter;
+        vars->update_status();
     }
     debug_message("Left cheb_iteration\n");
-    //std::cout << "mu:\n" << mu << "\n";
-    //std::cout << "KPM0[0]" << KPM0.KPM[0] << "\n";
 }
 
 void chebinator::cheb_iteration(unsigned n, unsigned ndis, unsigned nrand){ 
     debug_message("Entered cheb_iteration\n");
 
+    std::chrono::duration<double> time_span;
 
     // set some useless variables that are only going to be needed
     // for displaying the output with system signals
@@ -115,10 +121,10 @@ void chebinator::cheb_iteration(unsigned n, unsigned ndis, unsigned nrand){
     current_moments = n;
     current_nrand = nrand;
 
-
-
     start = std::chrono::high_resolution_clock::now();
 
+    vars->max_iter = n*nrand*ndis;
+    //sprintf(vars->buffer, "boas");
 
 
     unsigned moments = n;
@@ -143,24 +149,23 @@ void chebinator::cheb_iteration(unsigned n, unsigned ndis, unsigned nrand){
             KPM_initial.empty_ghosts();
             //std::cout << "KPM_initial:\n" << KPM_initial.KPM[0] << "\n";
 
+            double time_count = 0.0;
             for(unsigned i = 0; i < moments-1; i++){
                 debug_message("cheb iteration " + std::to_string(i) + "\n");
-                //std::cout << "iteration: " << i << "\n";
-
-                //std::cout << "before H\n";
-                //std::cout << "KPM0.0:\n" << KPM0.KPM[0] << "\n";
-                //std::cout << "KPM1.0:\n" << KPM1.KPM[0] << "\n";
                 H->cheb(KPM1, KPM0, i);
-                //std::cout << "after H\n";
-                //std::cout << "KPM0.0:\n" << KPM0.KPM[0] << "\n";
-                //std::cout << "KPM1.0:\n" << KPM1.KPM[0] << "\n";
 
                 swap_pointers(&KPM1, &KPM0);
                 KPM0.fill_ghosts();
                 mu(i+1) += (KPM_initial*KPM0)/nrand/ndis;
 
-                current_iter = i + r*moments + d*moments*nrand;
+
                 current = std::chrono::high_resolution_clock::now();
+                time_span = std::chrono::duration_cast<std::chrono::duration<double>>(current - start);
+                current_iter = i + r*moments + d*moments*nrand;
+                vars->avg_time = time_span.count()/(1+current_iter); 
+                vars->iter = current_iter;
+                vars->update_status();
+
             }
         }
     }
@@ -208,44 +213,6 @@ void chebinator::save(std::string name){
     debug_message("Left chebinator::save\n");
 }
 
-void chebinator::calc_finish(){
-    debug_message("Entered chebinator::calc_finish()\n");
-    /* Prints information about the current state of the program to the user's
-     * home directory. This information consists of all the system's parameters
-     * as well as the progress to being finished and the estimated time remaining
-     */
-
-    // Calculate the progress and the time remaining
-    std::chrono::duration<double> time_span;
-    time_span = std::chrono::duration_cast<std::chrono::duration<double>>(current - start);
-    double way_done = current_iter/double(max_iter);
-    double avg_iter_time = time_span.count()/current_iter;
-
-    // Append to a file in the user's home directory
-    //const char *homedir;
-    //homedir = getenv("HOME");
-    std::ofstream file;
-    //file.open(std::string(homedir) + "/kestrel_info.txt", std::ofstream::app);
-    file.open(std::string("kestrel_info.txt"));
-
-    // Output the information about the program
-    const char *id = getenv("PBS_JOBID");
-    if(id!=NULL){
-        file << "id=" << std::string(id);
-    }
-    file << " Lx,Ly=" << Lx << "," << Ly;
-    file << " N=" << current_moments;
-    file << " ND=" << current_ndis;
-    file << " NR=" << current_nrand;
-    file << " W=" << H->W*SCALE;
-    file << " S=" << seed;
-    file << " B=" << mult;
-    file << " Progress: " << way_done*100 << "%.";
-    file << " Time left: " << avg_iter_time*max_iter*(1.0-way_done) << "s\n";
-    file.close();
-
-    debug_message("Left chebinator::calc_finis()\n");
-}
 
 double chebinator::get_estimate(double time, unsigned moments, unsigned num_disorder, unsigned num_random){
     return time*moments*num_disorder*num_random;
@@ -255,9 +222,6 @@ void chebinator::set_geometry(unsigned lx, unsigned ly, unsigned norb){
     Lx = lx;
     Ly = ly;
     Norb = norb;
-    //LxG = Lx + 2;
-    //LyG = Ly + 2;
-    //Npoints = Lx*Ly*Norb;
 
     // Now that we know the number of orbitals, allocate
     // the memory needed for all the KPM vectors
