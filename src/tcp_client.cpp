@@ -37,20 +37,10 @@ int tcp_client(std::string *vars){
     bool str_finished = false;
     bool str_initialized = false;
     while(!finished){
-        //strcpy(mes, vars->to_string().c_str());
-        //std::cout << "before strcpy\n" << std::flush; 
-        //
-
-        //if((mes[0] != '0' and mes[0] != '1') or (mes[2] != '0' and mes[2] != '1')){
-            //std::cout << "TCP client: invalid input. Aborting.\n";
-        //}
 
         strcpy(mes, vars->c_str());
         str_finished = mes[2]=='1';
         str_initialized = mes[0]=='1';
-        //std::cout << "mes: "<< std::string(mes) << "\n";
-
-        //std::cout << "after to_string()\n" << std::flush;
 
         // Attempt to connect continuously
         if(!connected ){
@@ -68,11 +58,7 @@ int tcp_client(std::string *vars){
 
         if(connected){
             if(str_finished){
-                //std::cout << "connected and finished.\n" << std::flush;
-                //char *end_message = "END";
                 tcp = send_tcp(sock, (char*)mes);
-                //tcp = send_tcp(sock, end_message);
-                //valread = read( sock , buffer, 1024);
 
                 close(sock);
                 finished = true;
@@ -100,7 +86,13 @@ int tcp_client(std::string *vars){
 
         }
 
-        sleep(3);
+        for(int s = 0; s < 5; s++){
+            strcpy(mes, vars->c_str());
+            str_finished = mes[2]=='1';
+            sleep(100);
+            if(!connected or str_finished)
+                break;
+        }
     }
 
     //std::cout << "Left tcp_client.\n" << std::flush;
