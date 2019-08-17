@@ -92,6 +92,7 @@ void chebinator::cheb_iteration_restart(unsigned n, KPM_vector &KPM0_restart, KP
     double avg_iter_time = 0.0;
     for(unsigned i = previous_moments; i < total_moments; i++){
         debug_message("cheb iteration " + std::to_string(i) + "\n");
+        H->cheb(KPM1, KPM0, i);
 
         swap_pointers(&KPM1, &KPM0);
         KPM0.fill_ghosts();
