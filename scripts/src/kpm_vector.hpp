@@ -3,7 +3,6 @@ class KPM_vector{
     public:
         unsigned Lx, Ly;            // System dimensions
         unsigned LxG, LyG;          // System dimensions with ghosts
-        unsigned Lattice_Lx, Lattice_Ly;
         unsigned Norb;              // Number of orbitals
         unsigned Npoints;           // Number of points in this subdomain
 

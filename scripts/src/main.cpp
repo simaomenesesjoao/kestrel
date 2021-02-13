@@ -10,6 +10,8 @@
 #include <H5Cpp.h>
 #include <H5Group.h>
 
+#include "tcp_client.hpp"
+
 #include "general.hpp"
 #include "kpm_vector.hpp"
 #include "aux.hpp"
@@ -18,12 +20,26 @@
 #include "ComplexTraits.hpp"
 #include "myHDF5.hpp"
 
-int calculation(int argc, char **argv){
 
+int calculation(int argc, char **argv, variables *vars){
     // Parse input from the command line
-    // P is a class containing the parsed inputs
     parameters P;
     parse_input(argc, argv, &P);
+
+    // Rescale the relevant quantities
+    //P.anderson_W = P.anderson_W/SCALE;
+    P.energies = P.energies/SCALE;
+
+    // Set the unchangeable information that is going to 
+    // be transmited to the TCP server
+    vars->Lx = P.Lx;
+    vars->Ly = P.Ly;
+    vars->nrandom = P.nrandom;
+    vars->ndisorder = P.ndisorder;
+    vars->nmoments = P.nmoments;
+    vars->mult = P.mult;
+    vars->seed = P.seed;
+    vars->anderson_W = P.anderson_W;
 
     // Calculate the compatible magnetic fields and
     // the minimum magnetic flux allowed
@@ -61,10 +77,10 @@ int calculation(int argc, char **argv){
     unsigned n_threads;
     n_threads = P.nx*P.ny;
     unsigned Norb = 2;
+    //std::cout << "before allocation\n" << std::flush;
+    //std::cout << "nx,ny" << P.nx << " " << P.ny << "\n" << std::flush;
     omp_set_num_threads(n_threads);
 
-    // Parameters that are going to be shared among all threads: the sides and 
-    // corners of the lattice sections
     T ***corners;
     Eigen::Array<T, -1, -1> ***sides;
     corners = new T**[n_threads];
@@ -114,26 +130,46 @@ int calculation(int argc, char **argv){
     H.set_geometry(lx, ly);
     H.set_regular_hoppings();
     H.set_anderson_W(P.anderson_W/SCALE);
-    H.set_anderson();
     H.set_peierls(gauge_matrix);
-
-#pragma omp barrier
-
 
     chebinator C;
     C.corners = corners;
     C.sides = sides;
     C.set_hamiltonian(&H);
 
-    C.set_seed(P.seed*n_threads + id);
+    // There two are not required for the computation, but are used 
+    // to obtain output information about the program
+    C.set_seed(1*n_threads + id);
     C.cheb_iteration(P.nmoments, 1, 1);
+    //C.P = P;
+    //C.vars = vars;
 #pragma omp barrier
 #pragma omp critical
     {
     Global_MU += C.mu.real()/n_threads;
     }
 #pragma omp barrier
-    } // End parallelization
+    }
+
+    // Logging system status
+
+    // Estimate the time for completion
+    //double time = H.time_H();
+    //unsigned moments_to_process = P.nmoments;
+    //if(P.need_read) moments_to_process = P.moremoments;
+    //double estimate = C.get_estimate(time, moments_to_process, P.ndisorder, P.nrandom);
+    //verbose1("Estimated time for completion: " << estimate << " seconds.\n");
+
+
+    //// Add the time estimate to vars and the current initial status. 
+    //// After this, the 'initialized' flag may be set to true.
+    //vars->avg_time = time;
+    //vars->max_iter = moments_to_process;
+    //vars->iter = 0;
+    //vars->has_initialized = true;
+    //vars->update_status();
+
+
 
 
     //if(P.need_read){
@@ -180,7 +216,7 @@ int calculation(int argc, char **argv){
         mu_list[1] = Global_MU.block(0,0,total_moments/2,1);
 
         for(unsigned i = 0; i < N_lists; i++){
-            dos_list[i] = calc_dos(mu_list[i], P.energies/SCALE, "jackson");
+            dos_list[i] = calc_dos(mu_list[i], P.energies, "jackson");
         }
         delete []mu_list;
         verbose2("Finished calculating DoS\n");
@@ -191,6 +227,9 @@ int calculation(int argc, char **argv){
         delete []nmoments_list;
     }
 
+    //vars->has_finished = true;
+    //vars->update_status();
+    //vars->status = "1 1 finished";
 
     for(unsigned t = 0; t < n_threads; t++){
         for(unsigned orb = 0; orb < Norb; orb++){
@@ -209,7 +248,17 @@ int calculation(int argc, char **argv){
 
 int main(int argc, char **argv){
 
-    calculation(argc, argv);
+    variables vars;
+    vars.status = "0 0 initializing";
+    std::string *shared_str = &vars.status;
+
+    //std::thread thread1(tcp_client, shared_str);
+    //std::thread thread2(calculation, argc, argv, &vars);
+    calculation(argc, argv, &vars);
+
+    //thread2.join();
+    //thread1.join();
+
     return 0;
 }
 

@@ -1,0 +1,619 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1cm
+\topmargin 2cm
+\rightmargin 1cm
+\bottommargin 2cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Kestrel documentation
+\end_layout
+
+\begin_layout Author
+Simão Meneses João
+\end_layout
+
+\begin_layout Standard
+Code structure
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename code_dependencies.svg
+	lyxscale 30
+	scale 30
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Code dependencies.
+ The blobs in green do not have any dependencies.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Ghosts
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename ghosts.svg
+	lyxscale 50
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Domain decomposition in the lattice.
+ The arrows represent the lattice sites that are copied from one subomain's
+ interior to another's ghost layer.
+ Periodic boundary conditions are used.
+ For clarity, only some of the arrows are represented.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+set_peierls
+\end_layout
+
+\begin_layout Standard
+Relevant vectors, in real space (x,y) coordinates
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{a}_{1}=\left(\sqrt{3},0\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{a}_{2}=\left(\frac{\sqrt{3}}{2},\frac{3}{2}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{\delta}=\left(0,1\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Relevant vectors, in units of the lattice vectors
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{a}_{1}=\left(1,0\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{a}_{2}=\left(0,1\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{\delta}=\left(-\frac{1}{3},\frac{2}{3}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{\delta}=\left(\frac{2}{3},-\frac{1}{3}\right)=\frac{2}{3}\left(\sqrt{3},0\right)-\frac{1}{3}\left(\frac{\sqrt{3}}{2},\frac{3}{2}\right)=\left(\frac{2}{3}\sqrt{3},0\right)-\left(\frac{1}{3}\frac{\sqrt{3}}{2},\frac{1}{2}\right)=\left(\frac{\sqrt{3}}{2},-\frac{1}{2}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $ $
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Hamiltonian operation
+\end_layout
+
+\begin_layout Standard
+The Hamiltonian class contains all the information required to perform a
+ multiplication by the Hamiltonian.
+ The whole Hamiltonian matrix is stored, which uses a lot of memory.
+ There is one Hamiltonian matrix for each bond, which gets multiplied in
+ its entirety by the KPM vector.
+ 
+\end_layout
+
+\begin_layout Subsection
+set_peierls
+\end_layout
+
+\begin_layout Standard
+The method set_peierls replaces the Hamiltonian matrix elements by the matrix
+ elements with the correct Peierls phase
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left|n+1\right\rangle =H\left|n\right\rangle 
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+in components:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left\langle i\left|n+1\right\rangle \right.=\sum_{j}H_{ij}\left\langle j\left|n\right\rangle \right.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Each lattice site 
+\begin_inset Formula $i$
+\end_inset
+
+ may be split into its unit cell 
+\begin_inset Formula $\boldsymbol{R}$
+\end_inset
+
+ and its orbital 
+\begin_inset Formula $\alpha$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left\langle \boldsymbol{R},\alpha\left|n+1\right\rangle \right.=\sum_{\boldsymbol{R}',\beta}H\left(\boldsymbol{R},\alpha;\boldsymbol{R}',\beta\right)\left\langle \boldsymbol{R}',\beta\left|n\right\rangle \right.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Graphene may be split into contributions from sublattice 
+\begin_inset Formula $A$
+\end_inset
+
+ to sublattice 
+\begin_inset Formula $B$
+\end_inset
+
+ and vice-versa.
+ Each of the sublattices is kept in a separate array.
+ 
+\begin_inset Formula $\psi_{n}^{A}$
+\end_inset
+
+ and 
+\begin_inset Formula $\psi_{n}^{B}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\psi_{n+1}^{A}\left(\boldsymbol{R}\right) & = & \sum_{\boldsymbol{R}'}H\left(\boldsymbol{R},A;\boldsymbol{R}',B\right)\psi_{n}^{B}\left(\boldsymbol{R}'\right)\\
+\psi_{n+1}^{B}\left(\boldsymbol{R}\right) & = & \sum_{\boldsymbol{R}'}H\left(\boldsymbol{R},B;\boldsymbol{R}',A\right)\psi_{n}^{A}\left(\boldsymbol{R}'\right)
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename bonds.svg
+	lyxscale 50
+	scale 30
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+According to the image, each unit cell has 6 hoppings coming into it
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\left(\boldsymbol{R},B\right) & \rightarrow & \left(\boldsymbol{R},A\right)\\
+\left(\boldsymbol{R}-\boldsymbol{a}_{2},B\right) & \rightarrow & \left(\boldsymbol{R},A\right)\\
+\left(\boldsymbol{R}-\boldsymbol{a}_{2}+\boldsymbol{a}_{1},B\right) & \rightarrow & \left(\boldsymbol{R},A\right)\\
+\left(\boldsymbol{R},A\right) & \rightarrow & \left(\boldsymbol{R},B\right)\\
+\left(\boldsymbol{R}+\boldsymbol{a}_{2},A\right) & \rightarrow & \left(\boldsymbol{R},B\right)\\
+\left(\boldsymbol{R}+\boldsymbol{a}_{2}-\boldsymbol{a}_{1},A\right) & \rightarrow & \left(\boldsymbol{R},B\right)
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and the multiplication is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\psi_{n+1}^{A}\left(\boldsymbol{R}\right) & = & H\left(\boldsymbol{R},A;\boldsymbol{R},B\right)\psi_{n}^{B}\left(\boldsymbol{R}\right)\\
+ & + & H\left(\boldsymbol{R},A;\boldsymbol{R}-\boldsymbol{a}_{2},B\right)\psi_{n}^{B}\left(\boldsymbol{R}-\boldsymbol{a}_{2}\right)\\
+ & + & H\left(\boldsymbol{R},A;\boldsymbol{R}-\boldsymbol{a}_{2}+\boldsymbol{a}_{1},B\right)\psi_{n}^{B}\left(\boldsymbol{R}-\boldsymbol{a}_{2}+\boldsymbol{a}_{1}\right)\\
+\\
+\psi_{n+1}^{B}\left(\boldsymbol{R}\right) & = & H\left(\boldsymbol{R},B;\boldsymbol{R},A\right)\psi_{n}^{A}\left(\boldsymbol{R}\right)\\
+ & + & H\left(\boldsymbol{R},B;\boldsymbol{R}+\boldsymbol{a}_{2},A\right)\psi_{n}^{A}\left(\boldsymbol{R}+\boldsymbol{a}_{2}\right)\\
+ & + & H\left(\boldsymbol{R},B;\boldsymbol{R}+\boldsymbol{a}_{2}-\boldsymbol{a}_{1},A\right)\psi_{n}^{A}\left(\boldsymbol{R}+\boldsymbol{a}_{2}-\boldsymbol{a}_{1}\right)
+\end{eqnarray*}
+
+\end_inset
+
+The Hamiltonian is split into 6 components
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\psi_{n+1}^{A}\left(\boldsymbol{R}\right) & = & H_{0}\left(\boldsymbol{R}\right)\psi_{n}^{B}\left(\boldsymbol{R}\right)\\
+ & + & H_{1}\left(\boldsymbol{R}\right)\psi_{n}^{B}\left(\boldsymbol{R}-\boldsymbol{a}_{2}\right)\\
+ & + & H_{2}\left(\boldsymbol{R}\right)\psi_{n}^{B}\left(\boldsymbol{R}-\boldsymbol{a}_{2}+\boldsymbol{a}_{1}\right)\\
+\\
+\psi_{n+1}^{B}\left(\boldsymbol{R}\right) & = & H_{3}\left(\boldsymbol{R}\right)\psi_{n}^{A}\left(\boldsymbol{R}\right)\\
+ & + & H_{4}\left(\boldsymbol{R}\right)\psi_{n}^{A}\left(\boldsymbol{R}+\boldsymbol{a}_{2}\right)\\
+ & + & H_{5}\left(\boldsymbol{R}\right)\psi_{n}^{A}\left(\boldsymbol{R}+\boldsymbol{a}_{2}-\boldsymbol{a}_{1}\right)
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This may be put into matrix form by using the translation operator 
+\begin_inset Formula $T_{\boldsymbol{a}}\psi\left(\boldsymbol{R}\right)=\psi\left(\boldsymbol{R}-\boldsymbol{a}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\psi_{n+1}^{A} & = & \left(H_{0}+H_{1}T_{\boldsymbol{a}_{2}}+H_{2}T_{\boldsymbol{a}_{2}-\boldsymbol{a}_{1}}\right)\psi_{n}^{B}\\
+\psi_{n+1}^{B} & = & \left(H_{3}+H_{4}T_{-\boldsymbol{a}_{2}}+H_{5}T_{-\boldsymbol{a}_{2}+\boldsymbol{a}_{1}}\right)\psi_{n}^{A}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now we need to calculate these Hamiltonians 
+\begin_inset Formula $H_{0}$
+\end_inset
+
+ through 
+\begin_inset Formula $H_{5}$
+\end_inset
+
+ with the corresponding Peierls phase.
+ The Peierls phase is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\int_{\boldsymbol{R}_{n}^{\alpha}}^{\boldsymbol{R}_{m}^{\beta}}\boldsymbol{A}\left(\boldsymbol{r}\right)\cdot\text{d}\boldsymbol{r}=\boldsymbol{A}_{0}\left(\frac{\boldsymbol{R}_{m}^{\beta}+\boldsymbol{R}_{n}^{\alpha}}{2}\right)\cdot\left(\boldsymbol{R}_{m}^{\beta}-\boldsymbol{R}_{n}^{\alpha}\right)-\boldsymbol{A}_{0}\left(\boldsymbol{R}_{m}^{\beta}\right)\cdot\boldsymbol{\delta}^{\beta}+\boldsymbol{A}_{0}\left(\boldsymbol{R}_{n}^{\alpha}\right)\cdot\boldsymbol{\delta}^{\alpha}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Testing the Chebyshev iteration
+\end_layout
+
+\begin_layout Standard
+One site is 
+\begin_inset Formula $1$
+\end_inset
+
+, all others are 
+\begin_inset Formula $0$
+\end_inset
+
+.
+ Hopping is 
+\begin_inset Formula $1$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename test_h1.svg
+	scale 30
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+if all sites are 
+\begin_inset Formula $1$
+\end_inset
+
+, then we should get the sequence 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $1,3,17,99,577,3363,19601$
+\end_inset
+
+, which are the Chebyshev polynomials 
+\begin_inset Formula $T_{n}\left(3\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+If instead of 
+\begin_inset Formula $1$
+\end_inset
+
+ the hopping is 
+\begin_inset Formula $t$
+\end_inset
+
+, then the central value is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mu_{0} & = & 1\\
+\mu_{1} & = & 0\\
+\mu_{2} & = & 6t^{2}-1\\
+\mu_{3} & = & 0\\
+\mu_{4} & = & 120t^{4}-24t^{2}+1
+\end{eqnarray*}
+
+\end_inset
+
+for 
+\begin_inset Formula $t=1/3.5$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mu_{0} & = & 1\\
+\mu_{1} & = & 0\\
+\mu_{2} & = & -0.5102\\
+\mu_{3} & = & 0\\
+\mu_{4} & = & -0.1595
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

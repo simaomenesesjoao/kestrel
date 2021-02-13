@@ -29,7 +29,7 @@ void print_dos(parameters P, unsigned N_lists, unsigned *nmoments_list, Eigen::A
             metadata += " seed:" + std::to_string(P.seed);
 
             for(unsigned j = 0; j < N_lists; j++){
-                std::cout << metadata << " N:" << nmoments_list[j] << " en:" << P.energies(i) << " dos:" << dos[j](i)/SCALE << "\n";
+                std::cout << metadata << " N:" << nmoments_list[j] << " en:" << P.energies(i)*SCALE << " dos:" << dos[j](i) << "\n";
             }
         }
     }
@@ -573,58 +573,6 @@ void extended_euclidean(int a, int b, int *x, int *y, int *gcd){
     *y = old_s;
 
 
-}
-
-void save(KPM_vector *KPM0, KPM_vector *KPM1){
-    static Eigen::Array<T, -1, -1> kpmA, kpmB;
-    int Lx = KPM0->Lattice_Lx;
-    int Ly = KPM0->Lattice_Ly;
-#pragma omp master
-    {
-    kpmA = Eigen::Array<T, -1,- 1>::Zero(Ly, Lx);
-    kpmB = Eigen::Array<T, -1,- 1>::Zero(Ly, Lx);
-    //kpm(1,1) = 3;
-    //H5::H5File * file1 = new H5::H5File(name, H5F_ACC_TRUNC);
-
-    //for(unsigned n = 0; n < H->Norb; n++){
-        //write_hdf5(KPM0.KPM[n], file1, "/KPM0_"+std::to_string(n));
-        //write_hdf5(KPM1.KPM[n], file1, "/KPM1_"+std::to_string(n));
-    }
-#pragma omp barrier
-#pragma omp critical
-    {
-        std::cout << "inside critical " << omp_get_thread_num() << "\n" << std::flush;
-        unsigned tx, ty;
-        unsigned id;
-        id = KPM0->thread_id;
-        tx = id%KPM0->NTx;
-        ty = id/KPM0->NTx;
-
-        unsigned size_x, size_y;
-        size_y = Ly/double(KPM0->NTy) + 0.99;
-        size_x = Lx/double(KPM0->NTx) + 0.99;
-
-        unsigned i, j;
-        i = ty*size_y;
-        j = tx*size_x;
-        std::cout << "i,j " << i << " " << j << " " << KPM0->Ly << " " << KPM0->Lx << "\n" << std::flush;
-
-        kpmA.block(i,j,KPM0->Ly,KPM0->Lx) = KPM0->KPM[0].block(1,1,KPM0->Ly,KPM0->Lx);
-        kpmB.block(i,j,KPM0->Ly,KPM0->Lx) = KPM0->KPM[1].block(1,1,KPM0->Ly,KPM0->Lx);
-
-        std::cout << "PARTS\n";
-        std::cout << "A:\n" << KPM0->KPM[0] << "\n";
-        std::cout << "B:\n" << KPM0->KPM[1] << "\n";
-
-        std::cout << "TOTAL\n";
-        std::cout << "A:\n" << kpmA << "\n";
-        std::cout << "B:\n" << kpmB << "\n";
-    }
-
-    //file1->close();
-    //delete file1;
-#pragma omp barrier
-    verbose2("Left save");
 }
 
 void load(std::string name, KPM_vector *KPM0, KPM_vector *KPM1, Eigen::Array<TR, -1, -1> *mu){

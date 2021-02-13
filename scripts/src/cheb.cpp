@@ -226,7 +226,6 @@ void chebinator::set_mult(int mult2){
     mult = mult2;
 }
 
-
 void chebinator::save(std::string name){
     debug_message("Entered chebinator::save\n");
 

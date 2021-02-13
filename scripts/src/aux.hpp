@@ -82,7 +82,6 @@ struct parameters{
 
 };
 void parse_input(int argc, char **argv, parameters*);
-void save(KPM_vector*, KPM_vector*);
 void load(std::string, KPM_vector *, KPM_vector *, Eigen::Array<TR, -1, -1> *);
 void print_ham_info(parameters P);
 void print_cheb_info(parameters P);

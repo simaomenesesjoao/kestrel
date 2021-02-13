@@ -1,0 +1,8 @@
+#!/bin/bash
+dir=/home/simao/Sync/article_magnetic/program/kestrel/scripts/lockfile
+exec 100>$dir
+flock 100 
+
+echo "starting"
+sleep 5
+echo "finishing"
