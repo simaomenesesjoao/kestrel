@@ -39,7 +39,7 @@ void hamiltonian::set_peierls(Eigen::Matrix<int, 2, 2> gauge_matrix){
     Eigen::Matrix<TR, 2, 1> delta;
     delta = - 1.0/3.0 * a1c + 2.0/3.0 * a2c;
     //delta = 2.0/3.0 * a1c - 1.0/3.0 * a2c;
-    //delta = delta*0.0;
+    delta = delta*0.0;
 
     // neighbour distance for each hopping
     std::complex<TR> im = std::complex<TR>(0, 1.0);
