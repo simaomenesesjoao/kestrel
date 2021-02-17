@@ -26,6 +26,7 @@ void print_dos(parameters P, unsigned N_lists, unsigned *nmoments_list, Eigen::A
             metadata += " nrandom:" + std::to_string(P.nrandom);
             metadata += " ndisorder:" + std::to_string(P.ndisorder);
             metadata += " W:" + std::to_string(P.anderson_W);
+            metadata += " C:" + std::to_string(P.conc);
             metadata += " seed:" + std::to_string(P.seed);
 
             for(unsigned j = 0; j < N_lists; j++){
@@ -41,10 +42,11 @@ void print_dos(parameters P, unsigned N_lists, unsigned *nmoments_list, Eigen::A
 
         for(unsigned j = 0; j < N_lists; j++){
             std::string name;
-            name = "dos_N" + std::to_string(nmoments_list[j]) + "_W" + std::to_string(P.anderson_W) + "_B" + std::to_string(P.mult) + ".dat";
+            name = "dos_N" + std::to_string(nmoments_list[j]) + "_W" + std::to_string(P.anderson_W) + 
+                "_C" + std::to_string(P.conc) + "_B" + std::to_string(P.mult) + ".dat";
             file.open(name);
             for(unsigned i = 0; i < N_energies; i++)
-                file << P.energies(i)*SCALE << " " << dos[j](i) << "\n";
+                file << P.energies(i) << " " << dos[j](i) << "\n";
             file.close();
         }
 
@@ -55,6 +57,7 @@ void print_dos(parameters P, unsigned N_lists, unsigned *nmoments_list, Eigen::A
 
 Eigen::Array<TR, -1, -1> calc_dos(Eigen::Array<TR, -1, -1> mu, Eigen::Array<TR, -1, -1> energies, std::string mode){
     debug_message("Entered calc_dos\n");
+    //std::cout << energies << "\n";
 
     unsigned N_energies = energies.size();
     unsigned moments = mu.size();
@@ -80,10 +83,11 @@ Eigen::Array<TR, -1, -1> calc_dos(Eigen::Array<TR, -1, -1> mu, Eigen::Array<TR, 
             sq_en = Eigen::rsqrt(1.0 - energies*energies)*2.0/M_PI;
             temp[0] = Eigen::Array<TR, -1, -1>::Zero(N_energies, 1) + 1;
             temp[1] = energies;
+            //temp[0] = temp[1]*2*energies - temp[0]
 
             dos  = temp[0]*mu(0)/2.0*jackson(0, moments);
             dos += temp[1]*mu(1)*jackson(1, moments);
-            for(unsigned i = 1; i < moments; i++){
+            for(unsigned i = 2; i < moments; i++){
                 temp[i%2] = 2*energies*temp[(i+1)%2] - temp[i%2];
                 dos += temp[i%2]*mu(i)*jackson(i, moments);
             }
@@ -162,7 +166,7 @@ void parse_input(int argc, char **argv, parameters *P){
     }
 
     std::string *p_threads;
-    std::string *p_geometry, *p_mult, *p_anderson;      // Hamiltonian
+    std::string *p_geometry, *p_mult, *p_anderson, *p_conc;      // Hamiltonian
     std::string *p_nrandom, *p_nmoments, *p_numdis, *p_seed;    // Cheb
     std::string *p_NEnergies, *p_energies;              // output
     std::string *p_readfrom, *p_saveto;                 // restart
@@ -178,6 +182,7 @@ void parse_input(int argc, char **argv, parameters *P){
     p_geometry    = std::find(inputs, inputs+argc-1, "--geometry");
     p_mult        = std::find(inputs, inputs+argc-1, "--mult");
     p_anderson    = std::find(inputs, inputs+argc-1, "--anderson");
+    p_conc        = std::find(inputs, inputs+argc-1, "--vacancies");
 
     p_nrandom     = std::find(inputs, inputs+argc-1, "--nrandom");
     p_numdis      = std::find(inputs, inputs+argc-1, "--ndisorder");
@@ -205,7 +210,7 @@ void parse_input(int argc, char **argv, parameters *P){
     // through the command line
     verbose2("checking existence of command line instructions");
     bool has_nmoments, has_ndisorder, has_nrandom, has_seed;
-    bool has_geometry, has_anderson, has_mult;
+    bool has_geometry, has_anderson, has_mult, has_conc;
     bool has_thread;
     bool need_read, need_write, need_help;
     bool found_NEnergies, found_energies;
@@ -227,6 +232,7 @@ void parse_input(int argc, char **argv, parameters *P){
     has_thread       = p_threads     != p_final;
     has_mult         = p_mult        != p_final;
     has_anderson     = p_anderson    != p_final;
+    has_conc         = p_conc        != p_final;
  
     need_read        = p_readfrom    != p_final;
     need_write       = p_saveto      != p_final;
@@ -254,11 +260,11 @@ void parse_input(int argc, char **argv, parameters *P){
     bool output_energies;
 
     has_any_cheb = has_nmoments || has_ndisorder || has_nrandom || has_seed;
-    has_any_ham  = has_geometry || has_mult || has_anderson || has_thread;
+    has_any_ham  = has_geometry || has_mult || has_anderson || has_thread || has_conc;
     has_any_cl_input = has_any_cheb || has_any_ham;
 
     has_all_cheb = has_nmoments && has_ndisorder && has_nrandom && has_seed;
-    has_all_ham  = has_geometry && has_mult && has_anderson;
+    has_all_ham  = has_geometry && has_mult && has_anderson && has_conc;
     has_all_cl_input = has_all_ham && has_all_cheb;
 
     output_energies = found_NEnergies || found_energies;
@@ -335,7 +341,7 @@ void parse_input(int argc, char **argv, parameters *P){
     if(!need_read){
         try{
             std::string s_nmoments, s_nrandom, s_numdis, s_mult;
-            std::string s_Lx, s_Ly, s_seed, s_anderson;
+            std::string s_Lx, s_Ly, s_seed, s_anderson, s_conc;
             std::string s_nx, s_ny;
 
             s_nmoments  = *(p_nmoments+1);
@@ -348,6 +354,7 @@ void parse_input(int argc, char **argv, parameters *P){
             s_ny        = *(p_threads+2 );
             s_seed      = *(p_seed+1);
             s_anderson  = *(p_anderson+1);
+            s_conc      = *(p_conc+1);
 
             //std::cout << "SNX: " << s_nx << " " << s_ny << "\n" << std::flush;
             P->nmoments       = atoi((s_nmoments     ).c_str());
@@ -360,10 +367,11 @@ void parse_input(int argc, char **argv, parameters *P){
             P->ny             = atoi((s_ny           ).c_str());
             P->seed           = atoi((s_seed         ).c_str());
             P->anderson_W     = atof((s_anderson     ).c_str());
+            P->conc           = atof((s_conc         ).c_str());
 
             //std::cout << "ints: " << P->nx << " " << P->ny << "\n" << std::flush;
             bool b_nmoments, b_nrandom, b_numdis, b_mult;
-            bool b_Lx, b_Ly, b_seed, b_anderson;
+            bool b_Lx, b_Ly, b_seed, b_anderson, b_conc;
             bool b_nx, b_ny;
 
             b_nmoments  = is_numeric<int>(s_nmoments); 
@@ -376,8 +384,9 @@ void parse_input(int argc, char **argv, parameters *P){
             b_ny        = is_numeric<int>(s_ny);  
             b_seed      = is_numeric<int>(s_seed);  
             b_anderson  = is_numeric<double>(s_anderson);  
+            b_conc      = is_numeric<double>(s_conc);  
 
-            bool all_quantities_correct = b_nmoments && b_nrandom && b_numdis && b_mult && b_Lx && b_Ly && b_seed && b_anderson && b_nx && b_ny;
+            bool all_quantities_correct = b_nmoments && b_nrandom && b_numdis && b_mult && b_Lx && b_Ly && b_seed && b_anderson && b_nx && b_ny && b_conc;
 
 
             verbose2("Checking if all the quantities are correctly formatted.");
@@ -393,6 +402,7 @@ void parse_input(int argc, char **argv, parameters *P){
                 if(!b_ny)        std::cout << "threads ";
                 if(!b_seed)      std::cout << "seed ";
                 if(!b_anderson)  std::cout << "anderson ";
+                if(!b_conc)      std::cout << "concentration ";
                 std::cout << ". Aborting.\n";
                 exit(1);
             }
@@ -434,6 +444,7 @@ void parse_input(int argc, char **argv, parameters *P){
         get_hdf5(&P->Lx, file, (char *) "/Lx");
         get_hdf5(&P->Ly, file, (char *) "/Ly");
         get_hdf5(&P->anderson_W, file, (char *) "/anderson_w");
+        get_hdf5(&P->conc, file, (char *) "/concentration");
         get_hdf5(&P->mult, file, (char *) "/mult");
 
         // Fetch information about the Chebyshev iteration
@@ -499,6 +510,7 @@ void parse_input(int argc, char **argv, parameters *P){
                    current == p_threads or
                    current == p_mult or
                    current == p_anderson or
+                   current == p_conc or
                    current == p_nrandom or
                    current == p_nmoments or
                    current == p_numdis or
@@ -681,14 +693,19 @@ void print_ham_info(parameters P){
     verbose1("mult:                " + std::to_string(P.mult)         + "\n");
     verbose1("seed:                " + std::to_string(P.seed)         + "\n");
     verbose1("anderson:            " + std::to_string(P.anderson_W)   + "\n");
+    verbose1("vacancies:           " + std::to_string(P.conc)         + "\n");
 }
 void print_cheb_info(parameters P){
     verbose1("______Cheb iteration parameters_______\n");
     verbose1("num random:          " + std::to_string(P.nrandom)   + "\n");
     verbose1("num disorder:        " + std::to_string(P.ndisorder) + "\n");
+#if VERBOSE >= 1
     unsigned moments_to_calculate = P.nmoments;
+#endif
     if(P.need_read){
-        moments_to_calculate = P.moremoments;
+#if VERBOSE >= 1
+    moments_to_calculate = P.moremoments;
+#endif
         verbose1("num moments to calc: " + std::to_string(moments_to_calculate) + "\n");
         verbose1("total num moments:   " + std::to_string(moments_to_calculate + P.nmoments) + "\n");
     } else {
@@ -698,7 +715,6 @@ void print_cheb_info(parameters P){
 
 void print_compilation_info(){
     verbose1("_______Compilation parameters_______\n");
-    verbose1("STRIDE: " << STRIDE << "\n");
     verbose1("VERBOSE: " << VERBOSE << "\n");
     verbose1("SCALE: " << SCALE << "\n");
 }

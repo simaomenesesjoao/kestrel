@@ -182,6 +182,56 @@ Domain decomposition in the lattice.
 \end_layout
 
 \begin_layout Standard
+Lattice coordinates
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename lattice.svg
+	lyxscale 40
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Coordinates in the lattice after converting to primitive vector coordinates.
+ The green axis represent the coordinates in 
+\begin_inset Formula $(a_{1},a_{2})$
+\end_inset
+
+ space.
+ The red axis represent the indices where they are stored in the matrices
+ inside the code.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 set_peierls
 \end_layout
 
@@ -249,14 +299,36 @@ Relevant vectors, in units of the lattice vectors
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Section
 Hamiltonian operation
+\end_layout
+
+\begin_layout Standard
+The Hamiltonian class contains all the information required to perform a
+ multiplication by the Hamiltonian.
+ The whole Hamiltonian matrix is stored, which uses a lot of memory.
+ There is one Hamiltonian matrix for each bond, which gets multiplied in
+ its entirety by the KPM vector.
+ 
+\end_layout
+
+\begin_layout Subsection
+set_peierls
+\end_layout
+
+\begin_layout Standard
+The method set_peierls replaces the Hamiltonian matrix elements by the matrix
+ elements with the correct Peierls phase
+\end_layout
+
+\begin_layout Standard
+Vacancies
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\left|p+1\right\rangle =H\left|n\right\rangle 
+\left|n+1\right\rangle =H\left|n\right\rangle 
 \]
 
 \end_inset
@@ -482,7 +554,7 @@ Now we need to calculate these Hamiltonians
 \end_layout
 
 \begin_layout Standard
-Testing the Hamiltonian
+Testing the Chebyshev iteration
 \end_layout
 
 \begin_layout Standard

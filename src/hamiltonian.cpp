@@ -99,13 +99,13 @@ void hamiltonian::set_peierls(Eigen::Matrix<int, 2, 2> gauge_matrix){
 #pragma omp barrier
 #pragma omp critical
     {
-    id = omp_get_thread_num();
+    id = omp_get_thread_num(); // id = ty*N_threads_x + tx
     tx = id%N_threads_x;
     ty = id/N_threads_x;
     unsigned size_y = Lattice_Ly/double(N_threads_y) + 0.9;
     unsigned size_x = Lattice_Lx/double(N_threads_x) + 0.9;
 
-    offset_x = tx*Lx;
+    offset_x = tx*size_x;
     offset_y = std::max(int(Lattice_Ly)- int((ty + 1)*size_y), 0);
     }
 
@@ -176,38 +176,26 @@ void hamiltonian::set_anderson_W(double w_anderson){
 void hamiltonian::set_anderson(){
     debug_message("Entered hamiltonian::set_anderson\n");
         for(unsigned j = 0; j < Norb; j++){
-            anderson[j] = Eigen::Array<TR, -1, -1>::Random(Ly, Lx)*W; // random numbers between -W and W
+            anderson[j] = Eigen::Array<TR, -1, -1>::Random(Ly, Lx)*W/2.0; // random numbers between -W/2 and W/2
         }
     is_anderson_set = true;
     debug_message("Left hamiltonian::set_anderson\n");
 }
 
-double hamiltonian::time_H(){
-    debug_message("Entered hamiltonian::time_H\n");
-    using namespace std::chrono;
+void hamiltonian::set_vacancies(Eigen::Array<unsigned, -1, -1> vacA, Eigen::Array<unsigned, -1, -1> vacB){
+    debug_message("Entered hamiltonian::set_vacancies\n");
+    vacanciesA = vacA;
+    vacanciesB = vacB;
+    NvacA = vacanciesA.rows();
+    NvacB = vacanciesB.rows();
 
-    // Initialize the KPM vectors to zero
-    KPM_vector KPM0, KPM1;
-    KPM0.set_geometry(Lx, Ly, Norb);
-    KPM1.set_geometry(Lx, Ly, Norb);
-    set_anderson();
-
-    // Starting timing
-    high_resolution_clock::time_point t1 = high_resolution_clock::now();
-
-    const unsigned imax = 10;
-    for(unsigned i = 0; i < imax; i++){
-        H(KPM0, KPM1, 1);
-        swap_pointers(&KPM1, &KPM0);
-        KPM0.fill_ghosts();
-    }
-
-    high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
-
-
-    debug_message("Left hamiltonian::time_H\n");
-    return time_span.count()/imax;
+//#pragma omp critical
+    //{
+    //unsigned id = omp_get_thread_num();
+    //std::cout << "id:" << id << "\n";
+    //std::cout << vacanciesA << "\n" << vacanciesB << "\n";
+    //}
+    //debug_message("Left hamiltonian::set_vacancies\n");
 }
 
 void hamiltonian::H(KPM_vector &KPM_new, KPM_vector &KPM_old, unsigned f){
@@ -219,6 +207,10 @@ void hamiltonian::H(KPM_vector &KPM_new, KPM_vector &KPM_old, unsigned f){
     unsigned i = 0;
     unsigned final_i = Lx;
     unsigned final_j = Ly;
+
+//#pragma omp barrier
+//#pragma omp critical
+    //{
 
     // Anderson disorder for each orbital
     KPM_new.KPM[0].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[0].block(1+j, 1+i, final_j, final_i)*anderson[0].block(j, i, final_j, final_i)*f;
@@ -232,7 +224,35 @@ void hamiltonian::H(KPM_vector &KPM_new, KPM_vector &KPM_old, unsigned f){
     KPM_new.KPM[1].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[0].block(1+j, 1+i, final_j, final_i)*hoppings[3].block(j, i, final_j, final_i)*f;
     KPM_new.KPM[1].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[0].block(0+j, 1+i, final_j, final_i)*hoppings[4].block(j, i, final_j, final_i)*f;
     KPM_new.KPM[1].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[0].block(0+j, 0+i, final_j, final_i)*hoppings[5].block(j, i, final_j, final_i)*f;
+
+    // Vacancies
+    debug_message("Before vacancies in Hamiltonian\n");
+    debug_message("thread number:");
+    debug_message(omp_get_thread_num());
+    debug_message("\n");
+    unsigned r1,r2;
+    //std::cout << "size: " << KPM_new.KPM[0].rows() << "," << KPM_new.KPM[0].cols() << "\n";
+    //std::cout << "size: " << KPM_new.KPM[1].rows() << "," << KPM_new.KPM[1].cols() << "\n";
+    debug_message("A vacancies\n");
+    for(unsigned i = 0; i < NvacA; i++){
+
+        r1 = vacanciesA(i,0);
+        r2 = vacanciesA(i,1);
+        //std::cout << "r1,r2: " << r1 << "," << r2 << "\n" << std::flush;
+        KPM_new.KPM[0](r1+1,r2+1) = 0;
+    }
+    debug_message("B vacancies\n");
+    for(unsigned i = 0; i < NvacB; i++){
+        r1 = vacanciesB(i,0);
+        r2 = vacanciesB(i,1);
+        //std::cout << "r1,r2: " << r1 << "," << r2 << "\n" << std::flush;
+        KPM_new.KPM[1](r1+1,r2+1) = 0;
+    }
+    debug_message("After vacancies in Hamiltonian\n");
+    //
     debug_message("Left hamiltonian::H\n");
+    //}
+//#pragma omp barrier
 }
 
 

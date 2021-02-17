@@ -87,21 +87,38 @@ void KPM_vector::site(unsigned orb, unsigned x, unsigned y){
 
 
 void KPM_vector::random_uniform(){
+    debug_message("Entered random_uniform\n");
     // Initializes the KPM vector to a random 
     // vector of real (or complex) numbers
     // All orbitals get set to random numbers
-    for(unsigned i = 0; i < Norb; i++){
-        KPM[i].setRandom();
-        KPM[i]/=sqrt(Npoints_lattice/3.0);
-        if(nis_complex){
-            KPM[i]/=sqrt(2.0);
+
+    // Real case
+    if(!nis_complex){
+        for(unsigned i = 0; i < Norb; i++){
+            KPM[i].setRandom();
+            KPM[i]/=sqrt(Npoints_lattice/3.0);
         }
     }
+
+
+    // complex case
+    std::complex<double> im = std::complex<double>(0.0, 1.0);
+    if(nis_complex){
+        for(unsigned o = 0; o < Norb; o++){
+            for(unsigned i = 0; i < LyG; i++){
+                for(unsigned j = 0; j < LxG; j++){
+                    KPM[o](i,j) = exp(rand()*2.0*M_PI/RAND_MAX*im)/sqrt(Npoints_lattice);
+                }
+            }
+        }
+    }
+    debug_message("Left random_uniform\n");
+
 }
 
 void KPM_vector::fill_ghosts(){
     //unsigned cols, rows;
-    unsigned t, t_up, t_down, t_left, t_right;
+    unsigned t_up, t_down, t_left, t_right;
     unsigned t_ur, t_ul, t_dr, t_dl;
     unsigned cols, rows;
 

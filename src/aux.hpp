@@ -17,6 +17,7 @@ class variables{
         unsigned nrandom, ndisorder, nmoments;
         int mult, seed;
         double anderson_W;
+        double conc;
         std::string status;
 
         variables(){
@@ -44,6 +45,7 @@ class variables{
                 + "B="  + std::to_string(mult)       + " "
                 + "S="  + std::to_string(seed)       + " "
                 + "W="  + std::to_string(anderson_W) + " "
+                + "C="  + std::to_string(conc) + " "
                 + "i="  + std::to_string(iter)       + " " 
                 + "M="  + std::to_string(max_iter)   + " " 
                 + "T="  + std::to_string(avg_time);
@@ -59,6 +61,7 @@ struct parameters{
     unsigned nrandom, ndisorder, nmoments;
     int mult, seed;
     double anderson_W;
+    double conc;
     Eigen::Array<TR, -1, -1> energies;
     unsigned NEnergies;
     bool found_NEnergies;

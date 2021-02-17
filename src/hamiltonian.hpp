@@ -13,6 +13,8 @@ class hamiltonian{
         unsigned N_hoppings;
         Array* hoppings;
         Array* anderson;
+        Eigen::Array<unsigned, -1, -1> vacanciesA, vacanciesB;
+        unsigned NvacA, NvacB;
         double W;
         bool is_anderson_set;
 
@@ -23,11 +25,11 @@ class hamiltonian{
         ~hamiltonian();
         void set_geometry(unsigned, unsigned);
         void H(KPM_vector&, KPM_vector &, unsigned);
-        double time_H();
         void cheb(KPM_vector&, KPM_vector &, unsigned);
 
         void set_anderson();
         void set_anderson_W(double);
+        void set_vacancies(Eigen::Array<unsigned, -1, -1>, Eigen::Array<unsigned, -1, -1>);
 
         void set_regular_hoppings();
         void set_peierls(Eigen::Matrix<int, 2, 2>);

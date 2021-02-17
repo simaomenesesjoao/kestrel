@@ -1,19 +1,20 @@
 #!/bin/bash
 
 set -e
-Lx=200
-Ly=200
-nx=2
+Lx=256
+Ly=256
+nx=1
 ny=2
 NR=1
 ND=1
-B=0
-N=500
+B=10
+N=1024
 S=3
-W=0.40
+W=0.00
+C=0.01
 #energies="0.01 0.02 0.03 0.05 0.1 0.2 0.3"
-energies=1000
-input="--thread_division $nx $ny --geometry $Lx $Ly --nrandom $NR --ndisorder $ND --mult $B --seed $S --anderson $W --nmoments $N"
+energies=4096
+input="--thread_division $nx $ny --geometry $Lx $Ly --nrandom $NR --ndisorder $ND --mult $B --seed $S --anderson $W --vacancies $C --nmoments $N"
 #input="--readfrom restart.h5 --moremoments 50"
 #print_flags="--energies $energies --print_to_cout"
 print_flags="--NEnergies $energies --print_to_file" 
@@ -22,5 +23,8 @@ log_flags="--log_status"
 
 options="$input $print_flags $log_flags $restart_flags"
 
-VERBOSE=4 STRIDE=9999999 make -e -j6 
+cd ..
+VERBOSE=1 STRIDE=9999999 make -e -j6 
+mv kestrel tests
+cd tests
 ./kestrel $options

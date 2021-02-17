@@ -279,21 +279,7 @@ Relevant vectors, in units of the lattice vectors
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $\boldsymbol{\delta}=\left(-\frac{1}{3},\frac{2}{3}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $\boldsymbol{\delta}=\left(\frac{2}{3},-\frac{1}{3}\right)=\frac{2}{3}\left(\sqrt{3},0\right)-\frac{1}{3}\left(\frac{\sqrt{3}}{2},\frac{3}{2}\right)=\left(\frac{2}{3}\sqrt{3},0\right)-\left(\frac{1}{3}\frac{\sqrt{3}}{2},\frac{1}{2}\right)=\left(\frac{\sqrt{3}}{2},-\frac{1}{2}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $ $
+\begin_inset Formula $\boldsymbol{\delta}=\left(-\frac{1}{3},\frac{2}{3}\right)=\mathbf{\delta}_{1}$
 \end_inset
 
 
@@ -666,6 +652,14 @@ for
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Standard
+Implementation of vacancies
+\end_layout
+
+\begin_layout Standard
 
 \end_layout
 

@@ -16,7 +16,7 @@ class chebinator{
         Eigen::Array<T, -1, -1> ***sides;
         unsigned thread_id, n_threads, n_threads_x, n_threads_y;
         KPM_vector KPM0, KPM1, KPM_initial;
-        variables *vars;
+        //variables *vars;
         unsigned long int current_iter;
         unsigned long int max_iter;
         Eigen::Array<TR, -1, -1> mu;

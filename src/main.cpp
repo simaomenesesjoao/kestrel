@@ -54,6 +54,61 @@ int calculation(int argc, char **argv){
         std::srand((unsigned int) time(0));
     }
 
+    // Vacancies 
+    //double conc = 0.01; //1%
+    double conc = P.conc;
+    unsigned Nvac = conc*P.Ly*P.Lx*2;
+    unsigned Nsites = P.Ly*P.Lx*2;
+    if(Nvac > Nsites){
+        std::cout << "There are more vacancies than sites\n";
+        exit(1);
+    }
+
+
+    // Create a list of vacancies, no superpositions
+    unsigned *occupancies;
+    unsigned *vac_sites;
+
+    occupancies = new unsigned[Nsites];
+    vac_sites = new unsigned[Nvac];
+
+    for(unsigned i = 0; i < Nsites; i++){ occupancies[i] = 0; }
+
+
+    unsigned total = 0;
+    unsigned prop;
+    while(total < Nvac){
+        prop = rand() % Nsites;
+        if(occupancies[prop] == 0){
+            // Accept proposal
+            vac_sites[total] = prop;
+            occupancies[prop] = 1;
+            total++;
+        }
+    }
+    delete[] occupancies;
+
+    // print
+    //for(unsigned i = 0; i < Nvac; i++){ std::cout << vac_sites[i] << " "; } std::cout << "\n";
+
+    // Check
+    unsigned a, b;
+    bool double_vac = false;
+    for(unsigned i = 0; i < Nvac; i++){
+        a = vac_sites[i];
+        for(unsigned j = i+1; j < Nvac; j++){
+            b = vac_sites[j];
+            if(b==a){
+                double_vac = true;
+            }
+        }
+    }
+    if(double_vac){
+        std::cout << "Two vacancies exist in the same place\n";
+        exit(1);
+    }
+
+
 
 
 
@@ -84,12 +139,13 @@ int calculation(int argc, char **argv){
     Global_MU = Eigen::Array<TR, -1, -1>::Zero(P.nmoments, 1);
 
 
-#pragma omp parallel shared(corners, sides, Global_MU) firstprivate(gauge_matrix, P, Norb, n_threads)
+#pragma omp parallel shared(Nvac, corners, sides, vac_sites, Global_MU) firstprivate(gauge_matrix, P, Norb, n_threads)
     {
     unsigned id; 
     unsigned size_x, size_y;
     unsigned lx, ly;
     unsigned tx, ty;
+
 
     id = omp_get_thread_num();
     tx = id%P.nx;
@@ -101,6 +157,57 @@ int calculation(int argc, char **argv){
 
     ly = std::min(size_y, P.Ly - ty*size_y);
     lx = std::min(size_x, P.Lx - tx*size_x);
+
+
+    unsigned NvacA = 0;
+    unsigned NvacB = 0;
+    Eigen::Array<unsigned, -1, -1> vacAtemp, vacBtemp, vacA, vacB;
+    vacAtemp = Eigen::Array<unsigned, -1, -1>::Zero(Nvac,2);
+    vacBtemp = Eigen::Array<unsigned, -1, -1>::Zero(Nvac,2);
+    unsigned orb, vacpos, r1, r2;
+#pragma omp critical
+    {
+        //std::cout << "thread: " << omp_get_thread_num() << "\n";
+        for(unsigned i = 0; i < Nvac; i++){
+            vacpos = vac_sites[i]; // vacpos = Lx*Ly * o + Lx*y + x
+            r1 = vacpos % P.Lx;
+            r2 = ((vacpos - r1)/P.Lx ) % P.Ly;
+            orb = (vacpos - r1 - r2*P.Lx)/(P.Lx*P.Ly);
+
+            unsigned r1_tx, r2_ty;
+            // Which thread should it go to?
+            r1_tx = r1 / size_x;
+            r2_ty = (P.Ly - r2 - 1) / size_y;
+
+            // coordinates local
+            unsigned r1_loc, r2_loc;
+            r1_loc = r1 - r1_tx*size_x;
+            r2_loc = P.Ly - r2 - 1 - r2_ty*size_y;
+
+            //std::cout << "vac:" << vacpos << "    r1,r2,o: " << r1 << " " << r2 << " " << orb << "    tx,ty:" << r1_tx << "," << r2_ty << "    loc:" << r1_loc << "," << r2_loc << "\n";
+            if(r1_tx == tx && r2_ty == ty){
+                if(orb == 0){
+                    // Don't forget the axis are inverted!
+                    vacAtemp(NvacA,0) = ly - r2_loc - 1;
+                    vacAtemp(NvacA,1) = r1_loc;
+                    NvacA++;
+                }
+                if(orb == 1){
+                    vacBtemp(NvacB,1) = r1_loc;
+                    vacBtemp(NvacB,0) = ly - r2_loc - 1;
+                    NvacB++;
+                }
+            }
+        }
+
+    vacA = Eigen::Array<unsigned, -1, -1>::Zero(NvacA,2);
+    vacB = Eigen::Array<unsigned, -1, -1>::Zero(NvacB,2);
+    for(unsigned i = 0; i < NvacA; i++){ vacA.row(i) = vacAtemp.row(i); }
+    for(unsigned i = 0; i < NvacB; i++){ vacB.row(i) = vacBtemp.row(i); }
+    }
+#pragma omp barrier
+
+
 
     // Set the Hamiltonian object and initialize it with
     // the values obtained from the command line
@@ -115,6 +222,7 @@ int calculation(int argc, char **argv){
     H.set_regular_hoppings();
     H.set_anderson_W(P.anderson_W/SCALE);
     H.set_anderson();
+    H.set_vacancies(vacA, vacB);
     H.set_peierls(gauge_matrix);
 
 #pragma omp barrier
@@ -130,10 +238,12 @@ int calculation(int argc, char **argv){
 #pragma omp barrier
 #pragma omp critical
     {
-    Global_MU += C.mu.real()/n_threads;
+    Global_MU += C.mu.real();
     }
 #pragma omp barrier
     } // End parallelization
+    Global_MU(0) = 1;
+    //std::cout << "Global Mu\n" << Global_MU << "\n";
 
 
     //if(P.need_read){
@@ -202,6 +312,9 @@ int calculation(int argc, char **argv){
     }
     delete []corners;
     delete []sides;
+
+    // Clean up the vacancy list
+    delete[] vac_sites;
     return 0;
 }
 
