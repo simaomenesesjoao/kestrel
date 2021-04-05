@@ -540,6 +540,7 @@ void parse_input(int argc, char **argv, parameters *P){
 }
 
 void extended_euclidean(int a, int b, int *x, int *y, int *gcd){
+    debug_message("Entered extended_euclidean.\n");
     // Uses the extended euclidean algorithm to calculate
     // The gauge matrix. The diophantine equation we need
     // to solve is
@@ -585,6 +586,8 @@ void extended_euclidean(int a, int b, int *x, int *y, int *gcd){
     *y = old_s;
 
 
+    std::cout << "a,b: " << a << "," << b << " x,y: " << *x << "," << *y << " gcd: " << *gcd << "\n";
+    debug_message("Left extended_euclidean.\n");
 }
 
 void save(KPM_vector *KPM0, KPM_vector *KPM1){
@@ -721,10 +724,10 @@ void print_compilation_info(){
 
 void print_magnetic_info(parameters P, int M12, int M21, int min_flux){
     verbose1("___________Magnetic info___________\n");
-    verbose1("Minimum flux:        " + std::to_string(min_flux) + "\n");
-    verbose1("Flux:                " + std::to_string(min_flux) + "\n");
-    verbose1("Gauge matrix M(0,1): " + std::to_string(-M12*int(P.mult)) + "\n");
-    verbose1("Gauge matrix M(1,0): " + std::to_string(M21*int(P.mult)) + "\n");
+    verbose1("Minimum flux:            " + std::to_string(min_flux) + "\n");
+    verbose1("Flux:                    " + std::to_string(min_flux) + "\n");
+    verbose1("Gauge matrix M(0,1)=M12: " + std::to_string(M12*int(P.mult)) + "\n");
+    verbose1("Gauge matrix M(1,0)=M21: " + std::to_string(-M21*int(P.mult)) + "\n");
 }
 
 void print_output_info(parameters P){

@@ -206,8 +206,9 @@ void chebinator::cheb_iteration(unsigned n, unsigned ndis, unsigned nrand){
             // Fix normalization of the vectors
 #pragma omp critical
             {
-                KPM0.KPM[0] *= sqrt(KPM0.Npoints_lattice)/sqrt(KPM0.Npoints_lattice-totVac);
-                KPM0.KPM[1] *= sqrt(KPM0.Npoints_lattice)/sqrt(KPM0.Npoints_lattice-totVac);
+
+                for(unsigned orb = 0; orb < KPM0.Norb; orb++)
+                    KPM0.KPM[orb] *= sqrt(KPM0.Npoints_lattice)/sqrt(KPM0.Npoints_lattice-totVac);
 
             }
 
@@ -215,8 +216,8 @@ void chebinator::cheb_iteration(unsigned n, unsigned ndis, unsigned nrand){
 #pragma omp barrier
 #pragma omp critical
             {
-                tot_norm += KPM0.KPM[0].block(1,1,H->Ly,H->Lx).abs2().sum();
-                tot_norm += KPM0.KPM[1].block(1,1,H->Ly,H->Lx).abs2().sum();
+                for(unsigned orb = 0; orb < KPM0.Norb; orb++)
+                    tot_norm += KPM0.KPM[orb].block(1,1,H->Lx,H->Ly).abs2().sum();
                 //std::cout << "element:" << KPM0.KPM[0](1,1) << "\n";
             }
 #pragma omp barrier

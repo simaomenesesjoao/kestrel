@@ -81,6 +81,27 @@
 
 \begin_body
 
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\ket}[1]{\left|#1\right\rangle }
+{\left|#1\right\rangle }
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\bra}[1]{\left\langle #1\right|}
+{\left\langle #1\right|}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\braket}[2]{\left.\left\langle #1\right|#2\right\rangle }
+{\left.\left\langle #1\right|#2\right\rangle }
+\end_inset
+
+
+\end_layout
+
 \begin_layout Title
 Kestrel documentation
 \end_layout
@@ -90,6 +111,18 @@ Simão Meneses João
 \end_layout
 
 \begin_layout Standard
+This document has some important informations about the 
+\begin_inset Quotes eld
+\end_inset
+
+Kestrel
+\begin_inset Quotes erd
+\end_inset
+
+ code
+\end_layout
+
+\begin_layout Section
 Code structure
 \end_layout
 
@@ -279,21 +312,7 @@ Relevant vectors, in units of the lattice vectors
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $\boldsymbol{\delta}=\left(-\frac{1}{3},\frac{2}{3}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $\boldsymbol{\delta}=\left(\frac{2}{3},-\frac{1}{3}\right)=\frac{2}{3}\left(\sqrt{3},0\right)-\frac{1}{3}\left(\frac{\sqrt{3}}{2},\frac{3}{2}\right)=\left(\frac{2}{3}\sqrt{3},0\right)-\left(\frac{1}{3}\frac{\sqrt{3}}{2},\frac{1}{2}\right)=\left(\frac{\sqrt{3}}{2},-\frac{1}{2}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $ $
+\begin_inset Formula $\boldsymbol{\delta}=\left(-\frac{1}{3},\frac{2}{3}\right)=\mathbf{\delta}_{1}$
 \end_inset
 
 
@@ -468,92 +487,100 @@ According to the image, each unit cell has 6 hoppings coming into it
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-and the multiplication is
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{eqnarray*}
-\psi_{n+1}^{A}\left(\boldsymbol{R}\right) & = & H\left(\boldsymbol{R},A;\boldsymbol{R},B\right)\psi_{n}^{B}\left(\boldsymbol{R}\right)\\
- & + & H\left(\boldsymbol{R},A;\boldsymbol{R}-\boldsymbol{a}_{2},B\right)\psi_{n}^{B}\left(\boldsymbol{R}-\boldsymbol{a}_{2}\right)\\
- & + & H\left(\boldsymbol{R},A;\boldsymbol{R}-\boldsymbol{a}_{2}+\boldsymbol{a}_{1},B\right)\psi_{n}^{B}\left(\boldsymbol{R}-\boldsymbol{a}_{2}+\boldsymbol{a}_{1}\right)\\
-\\
-\psi_{n+1}^{B}\left(\boldsymbol{R}\right) & = & H\left(\boldsymbol{R},B;\boldsymbol{R},A\right)\psi_{n}^{A}\left(\boldsymbol{R}\right)\\
- & + & H\left(\boldsymbol{R},B;\boldsymbol{R}+\boldsymbol{a}_{2},A\right)\psi_{n}^{A}\left(\boldsymbol{R}+\boldsymbol{a}_{2}\right)\\
- & + & H\left(\boldsymbol{R},B;\boldsymbol{R}+\boldsymbol{a}_{2}-\boldsymbol{a}_{1},A\right)\psi_{n}^{A}\left(\boldsymbol{R}+\boldsymbol{a}_{2}-\boldsymbol{a}_{1}\right)
-\end{eqnarray*}
-
-\end_inset
-
-The Hamiltonian is split into 6 components
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{eqnarray*}
-\psi_{n+1}^{A}\left(\boldsymbol{R}\right) & = & H_{0}\left(\boldsymbol{R}\right)\psi_{n}^{B}\left(\boldsymbol{R}\right)\\
- & + & H_{1}\left(\boldsymbol{R}\right)\psi_{n}^{B}\left(\boldsymbol{R}-\boldsymbol{a}_{2}\right)\\
- & + & H_{2}\left(\boldsymbol{R}\right)\psi_{n}^{B}\left(\boldsymbol{R}-\boldsymbol{a}_{2}+\boldsymbol{a}_{1}\right)\\
-\\
-\psi_{n+1}^{B}\left(\boldsymbol{R}\right) & = & H_{3}\left(\boldsymbol{R}\right)\psi_{n}^{A}\left(\boldsymbol{R}\right)\\
- & + & H_{4}\left(\boldsymbol{R}\right)\psi_{n}^{A}\left(\boldsymbol{R}+\boldsymbol{a}_{2}\right)\\
- & + & H_{5}\left(\boldsymbol{R}\right)\psi_{n}^{A}\left(\boldsymbol{R}+\boldsymbol{a}_{2}-\boldsymbol{a}_{1}\right)
-\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-This may be put into matrix form by using the translation operator 
-\begin_inset Formula $T_{\boldsymbol{a}}\psi\left(\boldsymbol{R}\right)=\psi\left(\boldsymbol{R}-\boldsymbol{a}\right)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{eqnarray*}
-\psi_{n+1}^{A} & = & \left(H_{0}+H_{1}T_{\boldsymbol{a}_{2}}+H_{2}T_{\boldsymbol{a}_{2}-\boldsymbol{a}_{1}}\right)\psi_{n}^{B}\\
-\psi_{n+1}^{B} & = & \left(H_{3}+H_{4}T_{-\boldsymbol{a}_{2}}+H_{5}T_{-\boldsymbol{a}_{2}+\boldsymbol{a}_{1}}\right)\psi_{n}^{A}
-\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Now we need to calculate these Hamiltonians 
-\begin_inset Formula $H_{0}$
-\end_inset
-
- through 
-\begin_inset Formula $H_{5}$
-\end_inset
-
- with the corresponding Peierls phase.
- The Peierls phase is
+This comprises the whole Hamiltonian multiplication.
+ However, for convenience, we divide this operation by hopping types.
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\int_{\boldsymbol{R}_{n}^{\alpha}}^{\boldsymbol{R}_{m}^{\beta}}\boldsymbol{A}\left(\boldsymbol{r}\right)\cdot\text{d}\boldsymbol{r}=\boldsymbol{A}_{0}\left(\frac{\boldsymbol{R}_{m}^{\beta}+\boldsymbol{R}_{n}^{\alpha}}{2}\right)\cdot\left(\boldsymbol{R}_{m}^{\beta}-\boldsymbol{R}_{n}^{\alpha}\right)-\boldsymbol{A}_{0}\left(\boldsymbol{R}_{m}^{\beta}\right)\cdot\boldsymbol{\delta}^{\beta}+\boldsymbol{A}_{0}\left(\boldsymbol{R}_{n}^{\alpha}\right)\cdot\boldsymbol{\delta}^{\alpha}
+H=\sum_{i=1}^{6}H_{i}
 \]
 
+\end_inset
+
+ where each 
+\begin_inset Formula $H_{i}$
+\end_inset
+
+ corresponds to one specific hopping.
+ For example, for the third hopping, we get
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\ket{\mathbf{R},A}=H_{3,\mathbf{R}}\ket{\mathbf{R}+\mathbf{a}_{1}-\mathbf{a}_{2},B}
+\]
+
+\end_inset
+
+or 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+H_{3}=\sum_{\mathbf{R}}H_{3,\mathbf{R}}=\sum_{\mathbf{R}}t\ket{\mathbf{R},A}\bra{\mathbf{R}+\mathbf{a}_{1}-\mathbf{a}_{2},B}=\sum_{\mathbf{R}}t\ket{\mathbf{R},A}\bra{\mathbf{R}+\mathbf{d}_{3},B}
+\]
+
+\end_inset
+
+Matching with the Peierls phases, we set 
+\begin_inset Formula $\mathbf{R}_{n}=\mathbf{R}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{R}_{m}=\mathbf{R}+\mathbf{a}_{1}-\mathbf{a}_{2}=\mathbf{R}_{n}+\mathbf{d}_{3}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename hamiltonian.svg
+	lyxscale 40
+	scale 30
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+In the vector 
+\begin_inset Formula $v$
+\end_inset
+
+, i and j are the array indices, which also include the ghosts.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
 Testing the Chebyshev iteration
 \end_layout
 
@@ -591,7 +618,7 @@ status open
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
-
+Chebyshev iterations
 \end_layout
 
 \end_inset
@@ -667,6 +694,1288 @@ for
 \end_inset
 
 
+\end_layout
+
+\begin_layout Section
+Adding a magnetic field
+\end_layout
+
+\begin_layout Standard
+Now we need to calculate these Hamiltonians 
+\begin_inset Formula $H_{0}$
+\end_inset
+
+ through 
+\begin_inset Formula $H_{5}$
+\end_inset
+
+ with the corresponding Peierls phase.
+ For simplicity, we will always assume that the magnetic field is pointing
+ in the positive 
+\begin_inset Formula $z$
+\end_inset
+
+ direction.
+ The Peierls phase is 
+\begin_inset Formula 
+\[
+t\left(\mathbf{R}_{n}^{\alpha},\mathbf{R}_{m}^{\beta}\right)\exp\left[2\pi i\frac{\phi_{nm}^{\alpha\beta}}{\phi_{0}}\right]\exp\left[\frac{ie}{\hbar}\int_{\mathbf{R}_{m}}^{\mathbf{R}_{n}}\mathbf{A}\left(\mathbf{r}\right)\cdot d\mathbf{r}\right]
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula 
+\[
+\phi_{nm}^{\alpha\beta}=\left(\int_{\mathbf{R}_{n}^{\alpha}}^{\mathbf{R}_{m}^{\beta}}+\int_{\mathbf{R}_{m}^{\beta}}^{\mathbf{R}_{m}}+\int_{\mathbf{R}_{m}}^{\mathbf{R}_{n}}+\int_{\mathbf{R}_{n}}^{\mathbf{R}_{n}^{\alpha}}\right)\mathbf{A}\left(\mathbf{r}\right)\cdot d\mathbf{r}=\mathbf{V}\cdot\mathbf{B}
+\]
+
+\end_inset
+
+ is the magnetic flux through the signed area 
+\begin_inset Formula $\mathbf{V}$
+\end_inset
+
+ defined by the path 
+\begin_inset Formula $\mathbf{R}_{n}^{\alpha}\rightarrow\mathbf{R}_{m}^{\beta}\rightarrow\mathbf{R}_{m}\rightarrow\mathbf{R}_{n}\rightarrow\mathbf{R}_{n}^{\alpha}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{B}=\frac{h}{e\mathcal{V}_{c}}\sum_{ijk}\varepsilon_{ijk}\frac{M_{ij}}{N_{i}}\mathbf{a}_{k}$
+\end_inset
+
+ is the magnetic field associated with the vector potential 
+\begin_inset Formula $\mathbf{A}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /home/simao/Sync/notas/magnetic/peierls_new_path.svg
+	lyxscale 30
+	scale 20
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Integration path.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Last term
+\end_layout
+
+\begin_layout Standard
+Let's focus for now on the last term, which does not care about the details
+ within the unit cell.
+ Since 
+\begin_inset Formula $\mathbf{A}$
+\end_inset
+
+ is linear, we find
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{ie}{\hbar}\int_{\boldsymbol{R}_{n}}^{\boldsymbol{R}_{m}}\mathbf{A}\left(\boldsymbol{r}\right)\cdot d\boldsymbol{r}=\frac{ie}{\hbar}\mathbf{A}\left(\frac{\mathbf{R}_{m}+\mathbf{R}_{n}}{2}\right)\cdot\left(\mathbf{R}_{m}-\mathbf{R}_{n}\right)
+\]
+
+\end_inset
+
+but it's better to represent it in terms of the gauge matrix and difference
+ vectors.
+ Let 
+\begin_inset Formula $\mathbf{R}_{n}=X_{n}^{1}\mathbf{a}_{1}+X_{n}^{2}\mathbf{a}_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{R}_{m}=\mathbf{R}_{n}+\mathbf{d}$
+\end_inset
+
+, where 
+\begin_inset Formula $\mathbf{d}=d_{1}\mathbf{a}_{1}+d_{2}\mathbf{a}_{2}$
+\end_inset
+
+, since these will be the parameters used in the simulation.
+ The Peierls phase simplifies, using 
+\begin_inset Formula $\boldsymbol{A}\left(\boldsymbol{a}_{i}\right)\cdot\boldsymbol{a}_{j}=\frac{h}{e}\frac{M_{ij}}{N_{i}}$
+\end_inset
+
+ and the fact that 
+\begin_inset Formula $M_{ij}$
+\end_inset
+
+ is zero in the diagonal
+\begin_inset Note Comment
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{eqnarray*}
+\frac{ie}{\hbar}\int_{\boldsymbol{R}_{n}}^{\boldsymbol{R}_{m}}\mathbf{A}\left(\boldsymbol{r}\right)\cdot d\boldsymbol{r} & = & \frac{ie}{\hbar}\mathbf{A}\left(\mathbf{R}_{n}+\frac{\mathbf{d}}{2}\right)\cdot\mathbf{d}\\
+ & = & \frac{ie}{\hbar}\mathbf{A}\left(X_{n}^{0}\mathbf{a}_{0}+X_{n}^{1}\mathbf{a}_{1}+\frac{d_{0}\mathbf{a}_{0}+d_{1}\mathbf{a}_{1}}{2}\right)\cdot\left(d_{0}\mathbf{a}_{0}+d_{1}\mathbf{a}_{1}\right)\\
+ & = & \frac{ie}{\hbar}\left[\left(X_{n}^{0}+\frac{d_{0}}{2}\right)\mathbf{A}\left(\mathbf{a}_{0}\right)+\left(X_{n}^{1}+\frac{d_{1}}{2}\right)\mathbf{A}\left(\mathbf{a}_{1}\right)\right]\cdot\left(d_{0}\mathbf{a}_{0}+d_{1}\mathbf{a}_{1}\right)\\
+ & = & \frac{ie}{\hbar}\left[\left(X_{n}^{0}+\frac{d_{0}}{2}\right)d_{1}\mathbf{A}\left(\mathbf{a}_{0}\right)\cdot\mathbf{a}_{1}+\left(X_{n}^{1}+\frac{d_{1}}{2}\right)d_{0}\mathbf{A}\left(\mathbf{a}_{1}\right)\cdot\mathbf{a}_{0}\right]\\
+ & = & 2\pi i\left[\left(X_{n}^{0}+\frac{d_{0}}{2}\right)d_{1}\frac{M_{01}}{N_{0}}+\left(X_{n}^{1}+\frac{d_{1}}{2}\right)d_{0}\frac{M_{10}}{N_{1}}\right]
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{ie}{\hbar}\int_{\boldsymbol{R}_{n}}^{\boldsymbol{R}_{m}}\mathbf{A}\left(\boldsymbol{r}\right)\cdot d\boldsymbol{r}=\frac{ie}{\hbar}\mathbf{A}\left(\mathbf{R}_{n}+\frac{\mathbf{d}}{2}\right)\cdot\mathbf{d}=2\pi i\left[\left(X_{n}^{1}+\frac{d_{1}}{2}\right)d_{2}\frac{M_{12}}{N_{1}}+\left(X_{n}^{2}+\frac{d_{2}}{2}\right)d_{1}\frac{M_{21}}{N_{2}}\right]
+\]
+
+\end_inset
+
+This formula can be used in simple lattices
+\end_layout
+
+\begin_layout Subsection
+First term
+\end_layout
+
+\begin_layout Standard
+For the other term, it is important to note the integration path, because
+ that will determine the sign of the area.
+ The path runs from 
+\begin_inset Formula $\mathbf{R}_{n}^{\alpha}\rightarrow\mathbf{R}_{m}^{\beta}\rightarrow\mathbf{R}_{m}\rightarrow\mathbf{R}_{n}\rightarrow\mathbf{R}_{n}^{\alpha}$
+\end_inset
+
+ and we could determine the integral explicitly, but we can use the fact
+ that we know this is the magnetic flux across an area defined by four points.
+ Because the magnetic field is uniform, we only need to calculate the area.
+ Fortunately, there is a very nice formula for the area of a polygon, derived
+ from Green's theorem:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+V=\sum_{i=1}^{N}\frac{x_{i}+x_{i+1}}{2}\left(y_{i+1}-y_{i}\right)=\frac{1}{2}\sum_{i=1}^{N}\left(\mathbf{R}_{i+1}+\mathbf{R}_{i}\right)\cdot\hat{\mathbf{x}}\left(\mathbf{R}_{i+1}-\mathbf{R}_{i}\right)\cdot\hat{\mathbf{y}}
+\]
+
+\end_inset
+
+We know what the polygon vertices have to be, from the integration path.
+ They are, in sequence 
+\begin_inset Formula $\mathbf{R}_{n}^{\alpha},\mathbf{R}_{m}^{\beta},\mathbf{R}_{m},\mathbf{R}_{n}$
+\end_inset
+
+.
+ Furthermore, we define 
+\begin_inset Formula $\mathbf{R}_{n}^{\alpha}=\mathbf{R}_{n}+\delta^{\alpha}$
+\end_inset
+
+.
+ 
+\begin_inset Note Comment
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{eqnarray*}
+A & = & \frac{1}{2}\left(R_{m}^{\beta}+\boldsymbol{R}_{n}^{\alpha}\right)\cdot\hat{\mathbf{x}}\left(R_{m}^{\beta}-\boldsymbol{R}_{n}^{\alpha}\right)\cdot\hat{\mathbf{y}}\\
+ &  & +\frac{1}{2}\left(R_{m}+R_{m}^{\beta}\right)\cdot\hat{\mathbf{x}}\left(R_{m}-R_{m}^{\beta}\right)\cdot\hat{\mathbf{y}}\\
+ &  & +\frac{1}{2}\left(R_{n}+R_{m}\right)\cdot\hat{\mathbf{x}}\left(R_{n}-R_{m}\right)\cdot\hat{\mathbf{y}}\\
+ &  & +\frac{1}{2}\left(\boldsymbol{R}_{n}^{\alpha}+R_{n}\right)\cdot\hat{\mathbf{x}}\left(\boldsymbol{R}_{n}^{\alpha}-R_{n}\right)\cdot\hat{\mathbf{y}}
+\end{eqnarray*}
+
+\end_inset
+
+in terms of the new vectors
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{eqnarray*}
+2A & = & \left(2R_{m}-d+\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}\left(\delta^{\beta}-\delta^{\alpha}+d\right)\cdot\hat{\mathbf{y}}\\
+ &  & +\left(2R_{m}+\delta^{\beta}\right)\cdot\hat{\mathbf{x}}\left(-\delta^{\beta}\right)\cdot\hat{\mathbf{y}}\\
+ &  & +\left(2R_{m}-d\right)\cdot\hat{\mathbf{x}}\left(-d\right)\cdot\hat{\mathbf{y}}\\
+ &  & +\left(\delta^{\alpha}+2R_{m}-2d\right)\cdot\hat{\mathbf{x}}\left(\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+it cannot depend on 
+\begin_inset Formula $R_{m}$
+\end_inset
+
+ and, as expected, it cancels out
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{eqnarray*}
+2A & = & \left(-d+\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}\left(\delta^{\beta}-\delta^{\alpha}+d\right)\cdot\hat{\mathbf{y}}\\
+ &  & -\delta^{\beta}\cdot\hat{\mathbf{x}}\delta^{\beta}\cdot\hat{\mathbf{y}}\\
+ &  & +d\cdot\hat{\mathbf{x}}d\cdot\hat{\mathbf{y}}\\
+ &  & +\left(\delta^{\alpha}-2d\right)\cdot\hat{\mathbf{x}}\left(\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}
+\end{eqnarray*}
+
+\end_inset
+
+final simplification
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{eqnarray*}
+2A & = & -d\cdot\hat{\mathbf{x}}\left(\delta^{\beta}-\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}+\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}\left(\delta^{\beta}-\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}-d\cdot\hat{\mathbf{x}}d\cdot\hat{\mathbf{y}}+\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}d\cdot\hat{\mathbf{y}}\\
+ &  & -\delta^{\beta}\cdot\hat{\mathbf{x}}\delta^{\beta}\cdot\hat{\mathbf{y}}\\
+ &  & d\cdot\hat{\mathbf{x}}d\cdot\hat{\mathbf{y}}\\
+ &  & +\delta^{\alpha}\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}-2d\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{eqnarray*}
+2A & = & -d\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}+\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}\left(\delta^{\beta}-\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}+\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}d\cdot\hat{\mathbf{y}}+\delta^{\alpha}\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}-\delta^{\beta}\cdot\hat{\mathbf{x}}\delta^{\beta}\cdot\hat{\mathbf{y}}\\
+\\
+ & = & \left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}d\cdot\hat{\mathbf{y}}-d\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}+\delta^{\alpha}\cdot\hat{\mathbf{x}}\delta^{\beta}\cdot\hat{\mathbf{y}}-\delta^{\beta}\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}\\
+\\
+ & = & \left(\delta^{\beta}+\delta^{\alpha}-d\right)\cdot\hat{\mathbf{x}}d\cdot\hat{\mathbf{y}}-d\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}-d\right)\cdot\hat{\mathbf{y}}+\delta^{\alpha}\cdot\hat{\mathbf{x}}\delta^{\beta}\cdot\hat{\mathbf{y}}-\delta^{\beta}\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}\\
+\\
+ &  & =\left[-\left(\delta^{\beta}+\delta^{\alpha}-d\right)\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}-d\right)\cdot\hat{\mathbf{y}}+\left(\delta^{\beta}+\delta^{\alpha}-d\right)\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}\right]+\left[\left(\delta^{\beta}+\delta^{\alpha}-d\right)\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}-d\right)\cdot\hat{\mathbf{y}}-\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}-d\right)\cdot\hat{\mathbf{y}}\right]+\delta^{\alpha}\cdot\hat{\mathbf{x}}\delta^{\beta}\cdot\hat{\mathbf{y}}-\delta^{\beta}\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}\\
+\\
+ &  & =\left(\delta^{\beta}+\delta^{\alpha}-d\right)\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}-\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}-d\right)\cdot\hat{\mathbf{y}}+\delta^{\alpha}\cdot\hat{\mathbf{x}}\delta^{\beta}\cdot\hat{\mathbf{y}}-\delta^{\beta}\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}\\
+\\
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+ The calculated area is with this formula is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+V=\frac{1}{2}\left[\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}\mathbf{d}\cdot\hat{\mathbf{y}}-\mathbf{d}\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}+\delta^{\alpha}\cdot\hat{\mathbf{x}}\delta^{\beta}\cdot\hat{\mathbf{y}}-\delta^{\beta}\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}\right].
+\]
+
+\end_inset
+
+As expected, this formula does not depend on either 
+\begin_inset Formula $\mathbf{R}_{n}$
+\end_inset
+
+ or 
+\begin_inset Formula $\mathbf{R}_{m}$
+\end_inset
+
+, but only on the geometric details inside the unit cell, 
+\begin_inset Formula $\mathbf{\delta}^{\alpha}$
+\end_inset
+
+ and the distance vector 
+\begin_inset Formula $\mathbf{d}$
+\end_inset
+
+.
+ The corresponding peierls phase is 
+\begin_inset Formula $\exp\left[2\pi i\frac{\phi_{nm}^{\alpha\beta}}{\phi_{0}}\right]$
+\end_inset
+
+ where 
+\begin_inset Formula 
+\[
+\frac{\phi_{nm}^{\alpha\beta}}{\phi_{0}}=BV=\frac{1}{\mathcal{V}_{c}}\left[\frac{M_{12}}{N_{1}}-\frac{M_{21}}{N_{2}}\right]\frac{1}{2}\left[\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{x}}d\cdot\hat{\mathbf{y}}-d\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}+\delta^{\alpha}\cdot\hat{\mathbf{x}}\delta^{\beta}\cdot\hat{\mathbf{y}}-\delta^{\beta}\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}\right]
+\]
+
+\end_inset
+
+To test this formula for the area, let's analyze some examples.
+\end_layout
+
+\begin_layout Subsubsection
+Example 1: area of the square
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename examples.svg
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let's assume the square has vertices in 
+\begin_inset Formula $\left(0,0\right)$
+\end_inset
+
+,
+\begin_inset Formula $\left(0,b\right)$
+\end_inset
+
+,
+\begin_inset Formula $\left(a,b\right)$
+\end_inset
+
+,
+\begin_inset Formula $\left(a,0\right)$
+\end_inset
+
+.
+ Then, we can assign these to 
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathbf{R}_{n} & = & \left(0,0\right)\\
+\mathbf{R}_{n}^{\alpha} & = & \left(0,b\right)\\
+\mathbf{R}_{m}^{\beta} & = & \left(a,b\right)\\
+\mathbf{R}_{m} & = & \left(a,0\right)
+\end{eqnarray*}
+
+\end_inset
+
+which defines 
+\begin_inset Formula 
+\begin{eqnarray*}
+\delta^{\alpha} & = & \left(0,b\right)\\
+\delta^{\beta} & = & \left(0,b\right)\\
+\mathbf{d} & = & \left(a,0\right)
+\end{eqnarray*}
+
+\end_inset
+
+Now, applying the formula, we get
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+V=\frac{1}{2}\left[-\mathbf{d}\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}\right]=\frac{1}{2}\left[-a\left(2b\right)\right]=-ab.
+\]
+
+\end_inset
+
+The negative sign is consistent with the fact that the path is being traversed
+ clockwise.
+\end_layout
+
+\begin_layout Subsubsection
+Example 2: area of a triangle inside a hexagon
+\end_layout
+
+\begin_layout Standard
+Let's assume the hexagon has sides of length 
+\begin_inset Formula $a$
+\end_inset
+
+.
+ Then, the vertices of our triangle are in positions 
+\begin_inset Formula $\left(0,0\right)$
+\end_inset
+
+, 
+\begin_inset Formula $\left(0,a\right)$
+\end_inset
+
+, 
+\begin_inset Formula $\left(\frac{\sqrt{3}a}{2},\frac{3a}{2}\right)$
+\end_inset
+
+.
+ Assignment:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathbf{R}_{n} & = & \left(0,0\right)\\
+\mathbf{R}_{n}^{\alpha} & = & \left(0,a\right)\\
+\mathbf{R}_{m}^{\beta} & = & \left(\frac{\sqrt{3}a}{2},\frac{3a}{2}\right)\\
+\mathbf{R}_{m} & = & \left(\frac{\sqrt{3}a}{2},\frac{3a}{2}\right)
+\end{eqnarray*}
+
+\end_inset
+
+which defines
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\delta^{\alpha} & = & \left(0,a\right)\\
+\delta^{\beta} & = & \left(0,0\right)\\
+\mathbf{d} & = & \left(\frac{\sqrt{3}a}{2},\frac{3a}{2}\right)
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Applying the formula, we get
+\begin_inset Formula 
+\[
+V=\frac{1}{2}\left[-\mathbf{d}\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}\right]=\frac{1}{2}\left[-\left(\frac{\sqrt{3}a}{2}\right)a\right]=-\frac{\sqrt{3}a^{2}}{4}.
+\]
+
+\end_inset
+
+Noting that the area of a hexagon with side 
+\begin_inset Formula $a$
+\end_inset
+
+ is 
+\begin_inset Formula $\frac{3\sqrt{3}}{2}a^{2}$
+\end_inset
+
+, what we obtained is 
+\begin_inset Formula $\frac{1}{6}$
+\end_inset
+
+ of this, with the correct sign because the path is clockwise.
+\end_layout
+
+\begin_layout Subsubsection
+Example 3: area of trapezoid
+\end_layout
+
+\begin_layout Standard
+For this last example, we want to make sure all the terms of the formula
+ work fine, so we need nontrivial 
+\begin_inset Formula $\delta^{\alpha}$
+\end_inset
+
+ and 
+\begin_inset Formula $\delta^{\beta}$
+\end_inset
+
+.
+ The vertices of the trapezoid are, in order 
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathbf{R}_{n} & = & \left(a+2b,0\right)\\
+\mathbf{R}_{n}^{\alpha} & = & \left(a,h\right)\\
+\mathbf{R}_{m}^{\beta} & = & \left(-b,h\right)\\
+\mathbf{R}_{m} & = & \left(0,0\right)
+\end{eqnarray*}
+
+\end_inset
+
+so that
+\begin_inset Formula 
+\begin{eqnarray*}
+\delta^{\alpha} & = & \left(-2b,h\right)\\
+\delta^{\beta} & = & \left(-b,h\right)\\
+\mathbf{d} & = & \left(-a-2b,0\right)
+\end{eqnarray*}
+
+\end_inset
+
+Applying the formula:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+V & = & \frac{1}{2}\left[-\mathbf{d}\cdot\hat{\mathbf{x}}\left(\delta^{\beta}+\delta^{\alpha}\right)\cdot\hat{\mathbf{y}}+\delta^{\alpha}\cdot\hat{\mathbf{x}}\delta^{\beta}\cdot\hat{\mathbf{y}}-\delta^{\beta}\cdot\hat{\mathbf{x}}\delta^{\alpha}\cdot\hat{\mathbf{y}}\right]\\
+ & = & \frac{1}{2}\left[-\left(-a-2b\right)\left(2h\right)+\left(-2b\right)\left(h\right)-\left(-b\right)\left(h\right)\right]\\
+ & = & \frac{1}{2}\left[\left(a+2b\right)\left(2h\right)-bh\right]\\
+ & = & \frac{2a+3b}{2}h\\
+ & = & \frac{\left(a+2b\right)+\left(a+b\right)}{2}h
+\end{eqnarray*}
+
+\end_inset
+
+which is exactly the formula of a trapezoid.
+ The sign is positive because the curve is being followed in the anti-clockwise
+ direction.
+\end_layout
+
+\begin_layout Subsection
+Testing the last term
+\end_layout
+
+\begin_layout Standard
+The last term does not depend on the details of the unit cell, so it can
+ be tested with a simple lattice.
+ If there is only one atom per unit cell, then the first term is automatically
+ zero.
+ Here, we will compare the code with the Landau level spectrum for the 2D
+ electron gas (2DEG), which is obtained from considering the bottom of the
+ band in the 2D square lattice.
+ The complete dispersion relation is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\varepsilon\left(\mathbf{k}\right)=-2t\left(\cos\left(k_{x}a\right)+\cos\left(k_{y}a\right)\right)
+\]
+
+\end_inset
+
+which at the bottom of the band, near 
+\begin_inset Formula $\mathbf{k}=\mathbf{0}$
+\end_inset
+
+, can be written in terms of an effective mass
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\varepsilon\left(\mathbf{k}\right) & \approx & -2t\left(1-\frac{1}{2}k_{x}^{2}a^{2}+1-\frac{1}{2}k_{y}^{2}a^{2}\right)\\
+ & = & -2t\left(2-\frac{1}{2}k^{2}a^{2}\right)\\
+ & = & -4t+\frac{ta^{2}}{\hbar^{2}}\hbar^{2}k^{2}\\
+ & = & \varepsilon_{0}+\frac{\hbar^{2}k^{2}}{2m^{\star}}
+\end{eqnarray*}
+
+\end_inset
+
+where 
+\begin_inset Formula $m^{\star}=\frac{\hbar^{2}}{2ta^{2}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\varepsilon_{0}=-4t$
+\end_inset
+
+.
+ In this region, the electrons behave like a 2DEG, so inside a magnetic
+ field, they should display Landau levels with energy
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E=\varepsilon_{0}+\hbar\omega_{c}\left(n_{L}+\frac{1}{2}\right)
+\]
+
+\end_inset
+
+ where 
+\begin_inset Formula $\omega_{c}=\frac{eB}{m^{\star}}$
+\end_inset
+
+ is the cyclotron frequency and 
+\begin_inset Formula $n_{L}$
+\end_inset
+
+ is the Landau level index.
+ The allowed magnetic fields for this lattice follow 
+\begin_inset Formula 
+\[
+\mathbf{B}=\frac{1}{V_{c}}\frac{h}{e}\left(\frac{M_{12}}{N_{1}}-\text{\ensuremath{\frac{M_{21}}{N_{2}}}}\right)\hat{\mathbf{z}}
+\]
+
+\end_inset
+
+Noting that 
+\begin_inset Formula $V_{c}=a^{2}$
+\end_inset
+
+, the cyclotron frequency can now be computed from the allowed magnetic
+ fields 
+\begin_inset Note Comment
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{eqnarray*}
+\hbar\omega_{c} & = & \hbar\frac{eB}{m^{\star}}\\
+ & = & \hbar e\left(\frac{1}{\frac{\hbar^{2}}{2ta^{2}}}\right)\frac{h}{e}\frac{1}{V_{c}}\left(\frac{M_{12}}{N_{1}}-\text{\ensuremath{\frac{M_{21}}{N_{2}}}}\right)\\
+ & = & \frac{2ta^{2}}{\hbar}h\frac{1}{V_{c}}\left(\frac{M_{12}}{N_{1}}-\text{\ensuremath{\frac{M_{21}}{N_{2}}}}\right)\\
+ & = & \frac{2t}{\hbar}2\pi\hbar\left(\frac{M_{12}}{N_{1}}-\text{\ensuremath{\frac{M_{21}}{N_{2}}}}\right)\\
+ & = & 4\pi t\left(\frac{M_{12}}{N_{1}}-\text{\ensuremath{\frac{M_{21}}{N_{2}}}}\right)
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\hbar\omega_{c}=4\pi t\left(\frac{M_{12}}{N_{1}}-\text{\ensuremath{\frac{M_{21}}{N_{2}}}}\right)
+\]
+
+\end_inset
+
+Comparing the two, we find an excellent agreement for a weird geometry,
+ for several magnetic fields and using omp parallelization.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename landau_levels_square.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Testing the first term
+\end_layout
+
+\begin_layout Standard
+Testing the first term is more delicate, as it requires a complex unit cell.
+ To test it, we will use the arbitrariness of the unit cell to our advantage.
+ In the square lattice, the unit cell can be defined in different ways.
+ In the same lattice, we can choose to define the unit cell such that only
+ one atom is present.
+ Doubling a primitive vector, we can still describe the same system if we
+ include two atoms per unit cell.
+ The physical aspect of the system cannot depend on the choice of vectors,
+ so both must yield the same result.
+ Therefore, the overall Peierls phase of each hopping has to remain unchanged.
+ What this means is that some of the contribution coming from the last term
+ will go into the first term of the Peierls phase.
+ Let's look at a concrete example
+\end_layout
+
+\begin_layout Subsubsection
+Example 1: square lattice with one atom per unit cell
+\end_layout
+
+\begin_layout Standard
+The primitive vectors are:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathbf{a}_{1} & = & \left(a,0\right)\\
+\mathbf{a}_{2} & = & \left(0,a\right)
+\end{eqnarray*}
+
+\end_inset
+
+with one single atom located at position 
+\begin_inset Formula $\delta^{1}=\left(0,0\right)$
+\end_inset
+
+.
+ Let's use a 
+\begin_inset Formula $8\times8$
+\end_inset
+
+ lattice with the Landau gauge.
+ 
+\begin_inset Formula $M_{21}=0$
+\end_inset
+
+.
+ The magnetic field associated with this vector potential is 
+\begin_inset Formula 
+\[
+B=\frac{1}{a^{2}}\frac{h}{e}\frac{M_{12}}{8}
+\]
+
+\end_inset
+
+The first part of the Peierls phase is zero, and the last part takes the
+ simple form
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\chi=\frac{ie}{\hbar}\int_{\boldsymbol{R}_{n}}^{\boldsymbol{R}_{m}}\mathbf{A}\left(\boldsymbol{r}\right)\cdot d\boldsymbol{r}=2\pi i\left[\left(X_{n}^{1}+\frac{d_{1}}{2}\right)d_{2}\frac{M_{12}}{N_{1}}\right]
+\]
+
+\end_inset
+
+Now let's analyze the Peierls phase for each hopping
+\end_layout
+
+\begin_layout Itemize
+hopping up 
+\begin_inset Formula $\mathbf{R}_{m}=\mathbf{R}_{n}+\mathbf{a}_{2}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{d}=\mathbf{a}_{2}$
+\end_inset
+
+ so 
+\begin_inset Formula $d_{1}=0$
+\end_inset
+
+ and 
+\begin_inset Formula $d_{2}=1$
+\end_inset
+
+, so 
+\begin_inset Formula $\chi=2\pi iX_{n}^{1}\frac{M_{12}}{8}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+hopping right and left is zero
+\end_layout
+
+\begin_layout Subsubsection
+Example 2: square lattice with two atoms per unit cell
+\end_layout
+
+\begin_layout Standard
+The primitive vectors are
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+\mathbf{a}_{1} & = & \left(2a,0\right)\\
+\mathbf{a}_{2} & = & \left(0,a\right)
+\end{eqnarray*}
+
+\end_inset
+
+atoms located at positions
+\begin_inset Formula 
+\begin{eqnarray*}
+\delta^{1} & = & \left(0,0\right)\\
+\delta^{2} & = & \left(a,0\right)
+\end{eqnarray*}
+
+\end_inset
+
+Now the number of unit cells in direction 
+\begin_inset Formula $\mathbf{a}_{1}$
+\end_inset
+
+ is 
+\begin_inset Formula $N_{1}=4$
+\end_inset
+
+, so apparently the results could be different.
+ However, the size of the unit cell compensates for this, and the magnetic
+ field is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+B=\frac{1}{2a^{2}}\frac{h}{e}\frac{M_{12}}{4}
+\]
+
+\end_inset
+
+which is exactly the same.
+ Therefore, we should expect the physics to be the same.
+ Let's look at the hoppings modified by the last term in the Peierls phase
+\end_layout
+
+\begin_layout Enumerate
+Horizontal hoppings are all zero
+\end_layout
+
+\begin_layout Itemize
+last term: hopping up 
+\begin_inset Formula $\mathbf{R}_{m}=\mathbf{R}_{n}+\mathbf{a}_{2}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{d}=\mathbf{a}_{2}$
+\end_inset
+
+ so 
+\begin_inset Formula $d_{1}=0$
+\end_inset
+
+ and 
+\begin_inset Formula $d_{2}=1$
+\end_inset
+
+, so 
+\begin_inset Formula $\chi=2\pi iX_{n}^{1}\frac{M_{12}}{4}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+first term hopping up.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+First term has area zero, so it is zero.
+\end_layout
+
+\begin_layout Itemize
+Second term has area 
+\begin_inset Formula $+a^{2}$
+\end_inset
+
+ so it contributes with 
+\begin_inset Formula $\varphi/\varphi_{0}=2\pi\left(\frac{1}{2a^{2}}\frac{M_{12}}{4}\right)a^{2}=2\pi\frac{M_{12}}{8}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename lattice_sq.svg
+	scale 30
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+so the two descriptions of the same unit cell give rigorously the same Peierls
+ phases for every hopping
+\end_layout
+
+\begin_layout Standard
+Graphene
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename areas.svg
+	lyxscale 30
+	scale 20
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Testing both with graphene
+\end_layout
+
+\begin_layout Standard
+The energy spectrum of Landau levels in graphene has the following form:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{n}=\text{sgn}\left(n\right)v_{F}\sqrt{2\hbar eBn}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $v_{F}=\frac{3ta}{2\hbar}$
+\end_inset
+
+ is the Fermi velocity, the area is 
+\begin_inset Formula $V_{c}=\frac{3\sqrt{3}}{2}a^{2}$
+\end_inset
+
+ and the fields follow 
+\begin_inset Formula $\mathbf{B}=\frac{1}{V_{c}}\frac{h}{e}\left(\frac{M_{12}}{N_{1}}-\text{\ensuremath{\frac{M_{21}}{N_{2}}}}\right)\hat{\mathbf{z}}$
+\end_inset
+
+, so that
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{n}=\text{sgn}\left(n\right)3ta\sqrt{\frac{e}{2\hbar}Bn}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The magnetic fields follow
+\begin_inset Formula 
+\[
+E_{n}=\text{sgn}\left(n\right)t\sqrt{2\sqrt{3}\pi n\left(\frac{M_{12}}{N_{1}}-\frac{M_{21}}{N_{2}}\right)}
+\]
+
+\end_inset
+
+Comparing the two, there is an excellent agreement, using omp parallelization,
+ several fields and a nontrivial geometry.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename landau_levels_graphene.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $4000\times4001$
+\end_inset
+
+, the minimum field is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $h/e=4.1356\times10^{-15}Tm^{2}$
+\end_inset
+
+, 
+\begin_inset Formula $a=1.42\times10^{-10}m$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{eqnarray*}
+B_{min} & = & \frac{2}{3\sqrt{3}a^{2}}\frac{h}{e}\left(\frac{1}{N_{1}N_{2}}\right)\approx\frac{7.89\times10^{4}}{N_{1}N_{2}}=5mT
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $m$
+\end_inset
+
+ be the multiple of the minimum field
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{E_{n}}{t}=\sqrt{\frac{2\sqrt{3}\pi}{N_{1}N_{2}}}\sqrt{nm}=8\times10^{-4}\sqrt{nm}
+\]
+
+\end_inset
+
+for the first LL 
+\begin_inset Formula $n=1$
+\end_inset
+
+ and minimum field 
+\begin_inset Formula $m=1$
+\end_inset
+
+, we can expect 
+\begin_inset Formula $E_{1}=8\times10^{-4}t$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Extended euclidean algorithm
+\end_layout
+
+\begin_layout Standard
+Kestrel has a working implementation of the extended euclidean algorithm
+ to automatically determine the smallest possible magnetic field compatible
+ with any geometry.
+ We want to find all the values of 
+\begin_inset Formula $M_{12}$
+\end_inset
+
+ and 
+\begin_inset Formula $M_{21}$
+\end_inset
+
+ that satisfy the equation
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{1}{q}=\frac{M_{12}}{N_{1}}-\frac{M_{21}}{N_{2}}
+\]
+
+\end_inset
+
+ for 
+\begin_inset Formula $N_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $N_{2}$
+\end_inset
+
+ positive integers.
+ We want to find the largest 
+\begin_inset Formula $q$
+\end_inset
+
+ possible, to attain the smallest magnetic field possible.
+ This equation can be rearranged into a Diophantine equation which only
+ has solutions if 
+\begin_inset Formula $n\text{gcd}\left(qN_{1},qN_{2}\right)=N_{1}N_{2}$
+\end_inset
+
+ for some integer 
+\begin_inset Formula $n$
+\end_inset
+
+.
+ Solving this for 
+\begin_inset Formula $q$
+\end_inset
+
+ and using 
+\begin_inset Formula $n=1$
+\end_inset
+
+ to get the largest possible 
+\begin_inset Formula $q$
+\end_inset
+
+, we get 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{1}{q}=\frac{\text{gcd}\left(N_{1},N_{2}\right)}{N_{1}N_{2}}.
+\]
+
+\end_inset
+
+Using this value for 
+\begin_inset Formula $q$
+\end_inset
+
+, we can simplify our equation to
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\text{gcd}\left(N_{1},N_{2}\right)=N_{2}M_{12}-N_{1}M_{21}
+\]
+
+\end_inset
+
+Letting 
+\begin_inset Formula $a=N_{2}$
+\end_inset
+
+, 
+\begin_inset Formula $b=N_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $c=\text{gcd}\left(N_{1},N_{2}\right)$
+\end_inset
+
+, 
+\begin_inset Formula $x=M_{12}$
+\end_inset
+
+ and 
+\begin_inset Formula $y=-M_{21}$
+\end_inset
+
+, then we get the Diophantine equation
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+ax+by=c
+\]
+
+\end_inset
+
+which we know, by construction, can be solved
 \end_layout
 
 \end_body

@@ -18,6 +18,162 @@
 #include "ComplexTraits.hpp"
 #include "myHDF5.hpp"
 
+// This class contains all the information required to define a lattice for the Hamiltonian
+class LatticeStructure{
+    public:
+        unsigned dim, Norb, Nhops;
+        double scale;
+
+        // Information about the primitive vectors
+        Eigen::Array<TR, 2, 1> a1, a2;
+
+
+
+        // Information about the hoppings
+        Eigen::Array<int, -1, 2> origin;
+        Eigen::Array<unsigned, 1,-1> to_matrix, from_matrix;
+
+        // positions for the right hand side
+        Eigen::Array<double, -1, -1> orb_pos;
+
+        //LatticeStructure();
+        void SetSquare1(); // Square lattice with one atom per unit cell
+        void SetSquare2(); // Square lattice with two atoms per unit cell
+        void SetGraphene();
+ 
+};
+
+void LatticeStructure::SetSquare2(){
+    std::cout << "square2\n";
+    dim   = 2; // Spatial dimensions
+    Norb  = 2;
+    Nhops = 8;
+    scale = 4.1;
+
+    // Information about the primitive vectors
+    a1 << 2.0, 0.0;
+    a2 << 0.0, 1.0;
+
+
+
+    // Information about the hoppings
+    from_matrix = Eigen::Array<unsigned, 1, -1>::Zero(1,Nhops);
+    to_matrix   = Eigen::Array<unsigned, 1, -1>::Zero(1,Nhops);
+    origin      = Eigen::Array<int, -1, -1>::Zero(Nhops,dim);
+
+    origin << -1,0,
+              0,0,
+              0,1,
+              0,-1,
+              1,0,
+              0,0,
+              0,1,
+              0,-1;
+
+
+    from_matrix << 1,1,0,0,0,0,1,1;
+    to_matrix   << 0,0,0,0,1,1,1,1;
+
+
+    // Vectors between two carbons inside the same unit cell,
+    // in units of the lattice vectors
+    Eigen::Array<TR, 2, 1> delta;
+    delta << 0.5, 0.0;
+
+    // positions for the right hand side
+    orb_pos = Eigen::Array<double, -1,-1>::Zero(Norb,dim);
+    orb_pos.row(0) = delta*0.0;
+    orb_pos.row(1) = delta;
+
+
+
+
+}
+
+
+
+
+
+void LatticeStructure::SetGraphene(){
+    std::cout << "square1\n";
+    dim   = 2; // Spatial dimensions
+    Norb  = 2;
+    Nhops = 6;
+    scale = 3.1;
+
+    // Information about the primitive vectors
+    double a0,a;
+    a0 = 1.0; // carbon-carbon distance
+    a = sqrt(3)*a0; // length of primitive vectors
+    a1 << a/2.0, a*sqrt(3)/2.0;
+    a2 << a/2.0, -a*sqrt(3)/2.0;
+
+
+
+    // Information about the hoppings
+    from_matrix = Eigen::Array<unsigned, 1, -1>::Zero(1,Nhops);
+    to_matrix   = Eigen::Array<unsigned, 1, -1>::Zero(1,Nhops);
+    origin      = Eigen::Array<int, -1, -1>::Zero(Nhops,dim);
+
+    origin << 0,0,
+              -1,0,
+              0,1,
+              0,0,
+              1,0,
+              0,-1;
+
+    from_matrix << 1,1,1,0,0,0;
+    to_matrix   << 0,0,0,1,1,1;
+
+
+    // positions for the right hand side in units of the primitive vectors
+    orb_pos = Eigen::Array<double, -1,-1>::Zero(Norb,dim);
+    Eigen::Array<TR, 2, 1> delta;
+    delta << -1.0/3.0, 2.0/3.0;
+
+    // positions for the right hand side
+    orb_pos = Eigen::Array<double, -1,-1>::Zero(Norb,dim);
+    orb_pos.row(0) = delta*0.0;
+    orb_pos.row(1) = delta;
+
+}
+
+
+
+
+
+void LatticeStructure::SetSquare1(){
+    std::cout << "square1\n";
+    dim   = 2; // Spatial dimensions
+    Norb  = 1;
+    Nhops = 4;
+    scale = 4.1;
+
+    // Information about the primitive vectors
+    a1 << 1.0, 0.0;
+    a2 << 0.0, 1.0;
+
+
+
+    // Information about the hoppings
+    from_matrix = Eigen::Array<unsigned, 1, -1>::Zero(1,Nhops);
+    to_matrix   = Eigen::Array<unsigned, 1, -1>::Zero(1,Nhops);
+    origin      = Eigen::Array<int, -1, -1>::Zero(Nhops,dim);
+
+    origin << -1,0,
+              1,0,
+              0,1,
+              0,-1,
+
+    from_matrix << 0,0,0,0;
+    to_matrix   << 0,0,0,0;
+
+
+    // positions for the right hand side
+    orb_pos = Eigen::Array<double, -1,-1>::Zero(Norb,dim);
+
+}
+
 int calculation(int argc, char **argv){
 
     // Parse input from the command line
@@ -29,12 +185,14 @@ int calculation(int argc, char **argv){
     // the minimum magnetic flux allowed
     int min_flux;
     int M12, M21;
-    extended_euclidean(P.Lx, P.Ly, &M12, &M21, &min_flux);
-    Eigen::Matrix<int, 2, 2> gauge_matrix;
+    extended_euclidean(P.Ly, P.Lx, &M12, &M21, &min_flux);
+    std::cout << "M12,M21: " << M12 << " " << M21 << "\n";
+    Eigen::Array<int, 2, 2> gauge_matrix;
     gauge_matrix(0,0) = 0;
     gauge_matrix(1,1) = 0;
-    gauge_matrix(0,1) = -M12*P.mult;
-    gauge_matrix(1,0) = M21*P.mult;
+    gauge_matrix(0,1) = M12*P.mult;
+    gauge_matrix(1,0) = -M21*P.mult; //don't forget this sign has to be minus
+    std::cout << "gauge matrix:\n" << gauge_matrix << "\n";
     
     // Print the parameters gotten from the command line
     print_compilation_info();
@@ -44,6 +202,37 @@ int calculation(int argc, char **argv){
     print_log_info(P);
     print_output_info(P);
     print_restart_info(P);
+
+
+
+
+    std::cout << "MODEL: " << MODEL << "\n";
+    LatticeStructure Lat;
+#if MODEL == 1
+    Lat.SetSquare1();
+#endif
+#if MODEL == 2
+    Lat.SetSquare2();
+#endif
+#if MODEL == 3
+    Lat.SetGraphene();
+#endif
+    
+
+
+    //
+    //
+    //
+    // Information about the system
+    unsigned dim   = 2;
+    unsigned Norb = Lat.Norb;
+
+
+
+
+
+
+
 
     // set the global seed
     // NOTE: should have separate seed for disorder and
@@ -57,8 +246,8 @@ int calculation(int argc, char **argv){
     // Vacancies 
     //double conc = 0.01; //1%
     double conc = P.conc;
-    unsigned Nvac = conc*P.Ly*P.Lx*2;
-    unsigned Nsites = P.Ly*P.Lx*2;
+    unsigned Nsites = P.Ly*P.Lx*Lat.Norb;
+    unsigned Nvac = conc*Nsites;
     if(Nvac > Nsites){
         std::cout << "There are more vacancies than sites\n";
         exit(1);
@@ -113,9 +302,12 @@ int calculation(int argc, char **argv){
 
 
 
+
+
+
+
     unsigned n_threads;
     n_threads = P.nx*P.ny;
-    unsigned Norb = 2;
     omp_set_num_threads(n_threads);
 
     // Parameters that are going to be shared among all threads: the sides and 
@@ -125,10 +317,10 @@ int calculation(int argc, char **argv){
     corners = new T**[n_threads];
     sides   = new Eigen::Array<T, -1, -1>**[n_threads];
     for(unsigned t = 0; t < n_threads; t++){
-        corners[t] = new T*[Norb];
-        sides[t] = new Eigen::Array<T, -1, -1>*[Norb];
+        corners[t] = new T*[Lat.Norb];
+        sides[t] = new Eigen::Array<T, -1, -1>*[Lat.Norb];
 
-        for(unsigned orb = 0; orb < Norb; orb++){
+        for(unsigned orb = 0; orb < Lat.Norb; orb++){
             corners[t][orb] = new T[4];
             sides[t][orb] = new Eigen::Array<T, -1, -1>[4];
         }
@@ -162,8 +354,8 @@ int calculation(int argc, char **argv){
     unsigned NvacA = 0;
     unsigned NvacB = 0;
     Eigen::Array<unsigned, -1, -1> vacAtemp, vacBtemp, vacA, vacB;
-    vacAtemp = Eigen::Array<unsigned, -1, -1>::Zero(Nvac,2);
-    vacBtemp = Eigen::Array<unsigned, -1, -1>::Zero(Nvac,2);
+    vacAtemp = Eigen::Array<unsigned, -1, -1>::Zero(Nvac,dim);
+    vacBtemp = Eigen::Array<unsigned, -1, -1>::Zero(Nvac,dim);
     unsigned orb, vacpos, r1, r2;
 #pragma omp critical
     {
@@ -177,24 +369,23 @@ int calculation(int argc, char **argv){
             unsigned r1_tx, r2_ty;
             // Which thread should it go to?
             r1_tx = r1 / size_x;
-            r2_ty = (P.Ly - r2 - 1) / size_y;
+            r2_ty = r2 / size_y;
 
             // coordinates local
             unsigned r1_loc, r2_loc;
             r1_loc = r1 - r1_tx*size_x;
-            r2_loc = P.Ly - r2 - 1 - r2_ty*size_y;
+            r2_loc = r2 - r2_ty*size_y;
 
             //std::cout << "vac:" << vacpos << "    r1,r2,o: " << r1 << " " << r2 << " " << orb << "    tx,ty:" << r1_tx << "," << r2_ty << "    loc:" << r1_loc << "," << r2_loc << "\n";
             if(r1_tx == tx && r2_ty == ty){
                 if(orb == 0){
-                    // Don't forget the axis are inverted!
-                    vacAtemp(NvacA,0) = ly - r2_loc - 1;
-                    vacAtemp(NvacA,1) = r1_loc;
+                    vacAtemp(NvacA,0) = r1_loc;
+                    vacAtemp(NvacA,1) = r2_loc;
                     NvacA++;
                 }
                 if(orb == 1){
-                    vacBtemp(NvacB,1) = r1_loc;
-                    vacBtemp(NvacB,0) = ly - r2_loc - 1;
+                    vacBtemp(NvacB,0) = r1_loc;
+                    vacBtemp(NvacB,1) = r2_loc;
                     NvacB++;
                 }
             }
@@ -211,7 +402,7 @@ int calculation(int argc, char **argv){
 
     // Set the Hamiltonian object and initialize it with
     // the values obtained from the command line
-    hamiltonian H;
+    hamiltonian H(Lat.Norb, Lat.Nhops);
 
     H.Lattice_Lx = P.Lx;
     H.Lattice_Ly = P.Ly;
@@ -220,6 +411,12 @@ int calculation(int argc, char **argv){
     
     H.set_geometry(lx, ly);
     H.set_regular_hoppings();
+    H.scale = Lat.scale;
+
+    H.set_primitive2(Lat.a1,Lat.a2);
+    H.set_origin_to_from(Lat.origin, Lat.to_matrix, Lat.from_matrix);
+    H.set_orbpos(Lat.orb_pos);
+
     H.set_anderson_W(P.anderson_W/SCALE);
     H.set_anderson();
     H.set_vacancies(vacA, vacB);

@@ -28,7 +28,7 @@
 #endif
 
 
-#define SCALE 3.5
+#define SCALE 4.1
 
 typedef double TR;
 #if nis_complex == 1

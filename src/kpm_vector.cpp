@@ -54,7 +54,7 @@ KPM_vector::KPM_vector(unsigned lx, unsigned ly, unsigned norb){
 
     // Initialize each of the KPM vectors to the right dimensions
     for(unsigned i = 0; i < Norb; i++){
-        KPM[i] = Eigen::Array<T, -1, -1>::Zero(LyG, LxG);
+        KPM[i] = Eigen::Array<T, -1, -1>::Zero(LxG, LyG);
     }
     debug_message("Left KPM_vector constructor.\n");
 }
@@ -80,7 +80,7 @@ void KPM_vector::site(unsigned orb, unsigned x, unsigned y){
     }
 
     if(thread_id == 0){
-        KPM[orb](y,x) = 1;
+        KPM[orb](x,y) = 1;
     }
 #pragma omp barrier
 }
@@ -105,8 +105,8 @@ void KPM_vector::random_uniform(){
     std::complex<double> im = std::complex<double>(0.0, 1.0);
     if(nis_complex){
         for(unsigned o = 0; o < Norb; o++){
-            for(unsigned i = 0; i < LyG; i++){
-                for(unsigned j = 0; j < LxG; j++){
+            for(unsigned i = 0; i < LxG; i++){
+                for(unsigned j = 0; j < LyG; j++){
                     KPM[o](i,j) = exp(rand()*2.0*M_PI/RAND_MAX*im)/sqrt(Npoints_lattice);
                 }
             }
@@ -117,31 +117,35 @@ void KPM_vector::random_uniform(){
 }
 
 void KPM_vector::fill_ghosts(){
+    debug_message("Entered KPM_vectors::fill_ghosts\n");
     //unsigned cols, rows;
     unsigned t_up, t_down, t_left, t_right;
-    unsigned t_ur, t_ul, t_dr, t_dl;
-    unsigned cols, rows;
-
-
-    cols = LxG;
-    rows = LyG;
+    unsigned t_ur, t_ul, t_lr, t_ll;
 
     // save to memory
     for(unsigned orb = 0; orb < Norb; orb++){
 
+
+        //      Lattice
+        //   # # # # # # # 
+        //   # o o u o o #    ^y
+        //   # l o o o r #    |
+        //   # o o d o o #    | 
+        //   # # # # # # #    ---> x
+
         // Ghosts on the sides
-        // (in order) left, right, up, down
-        sides[thread_id][orb][0] = KPM[orb].block(1,1,rows-2,1);        // Left
-        sides[thread_id][orb][1] = KPM[orb].block(1,cols-2,rows-2,1);   // Right
-        sides[thread_id][orb][2] = KPM[orb].block(1,1,1,cols-2);        // Up
-        sides[thread_id][orb][3] = KPM[orb].block(rows-2,1,1,cols-2);   // Down
+        // (in order) Down, Up, Left, Right
+        sides[thread_id][orb][0] = KPM[orb].block(    1,     1, LxG-2,     1);   // Down
+        sides[thread_id][orb][1] = KPM[orb].block(    1, LyG-2, LxG-2,     1);   // Up
+        sides[thread_id][orb][2] = KPM[orb].block(    1,     1,     1, LyG-2);   // Left
+        sides[thread_id][orb][3] = KPM[orb].block(LxG-2,     1,     1, LyG-2);   // Right
 
         // Ghosts in the corners
-        // (in order) upper left (ul), upper right (ur), down left (dl), down right (dr)
-        corners[thread_id][orb][0] = KPM[orb](1, 1);            // Upper left
-        corners[thread_id][orb][1] = KPM[orb](1, cols-2);       // Upper right
-        corners[thread_id][orb][2] = KPM[orb](rows-2, 1);       // Lower left
-        corners[thread_id][orb][3] = KPM[orb](rows-2, cols-2);  // Lower right
+        // (in order) Lower left (ll), Upper left (ul), Lower right (lr), Upper right (ur)
+        corners[thread_id][orb][0] = KPM[orb](    1,     1); // Lower left
+        corners[thread_id][orb][1] = KPM[orb](    1, LyG-2); // Upper left
+        corners[thread_id][orb][2] = KPM[orb](LxG-2,     1); // Lower right
+        corners[thread_id][orb][3] = KPM[orb](LxG-2, LyG-2); // Upper right
     }
 
     // Make sure all threads have finished writing into memory
@@ -151,71 +155,75 @@ void KPM_vector::fill_ghosts(){
     for(unsigned orb = 0; orb < Norb; orb++){
         tx = thread_id%NTx;
         ty = thread_id/NTx;
+        // tx + NTx * ty
+        //
+        // thread disposition in space
+        // 3 4 5
+        // 0 1 2 
 
-        // Ghosts on the sides. Note that my notion of increasing y (up) is different
-        // from the one printed in the shell (down)
-        t_up    = tx + ((ty - 1 + NTy)%NTy)*NTx;
-        t_down  = tx + ((ty + 1)%NTy)*NTx;
+        // Ghosts on the sides
+        t_up    = tx                 + ((ty + 1)%NTy)*NTx;
+        t_down  = tx                 + ((ty - 1 + NTy)%NTy)*NTx;
         t_left  = (tx - 1 + NTx)%NTx + ty*NTx;
-        t_right = (tx + 1)%NTx + ty*NTx;
+        t_right = (tx + 1)%NTx       + ty*NTx;
 
-        KPM[orb].block(1,0,rows-2,1)        = sides[t_left][orb][1];    // left
-        KPM[orb].block(1,cols-1,rows-2,1)   = sides[t_right][orb][0];   // right
-        KPM[orb].block(0,1,1,cols-2)        = sides[t_up][orb][3];      // up
-        KPM[orb].block(rows-1,1,1,cols-2)   = sides[t_down][orb][2];    // down
-
-        t_ul = (tx - 1 + NTx)%NTx + ((ty - 1 + NTy)%NTy)*NTx;   // ul - upper left
-        t_ur = (tx + 1)%NTx       + ((ty - 1 + NTy)%NTy)*NTx;   // ur - upper right
-        t_dl = (tx - 1 + NTx)%NTx + ((ty + 1)%NTy)*NTx;         // dl - down left
-        t_dr = (tx + 1)%NTx       + ((ty + 1)%NTy)*NTx;         // dr - down right
+        KPM[orb].block(    1,    0, LxG-2,     1) = sides[t_down ][orb][1]; // lower part of KPM connects to upper part (1) of thread below
+        KPM[orb].block(    1,LyG-1, LxG-2,     1) = sides[t_up   ][orb][0]; // upper part of KPM connects to lower part (0) of thread above
+        KPM[orb].block(    0,    1,     1, LyG-2) = sides[t_left ][orb][3]; // left part of KPM connects to right part (3) of thread to the left
+        KPM[orb].block(LxG-1,    1,     1, LyG-2) = sides[t_right][orb][2]; // right part of KPM connects to left part (2) of thread to the right
 
         // Ghosts in the corners
-        KPM[orb](0, 0)            = corners[t_ul][orb][3];
-        KPM[orb](rows-1, cols-1)  = corners[t_dr][orb][0];
-        KPM[orb](0, cols-1)       = corners[t_ur][orb][2];
-        KPM[orb](rows-1, 0)       = corners[t_dl][orb][1];
+        t_ll = (tx - 1 + NTx)%NTx + ((ty - 1 + NTy)%NTy)*NTx; // ll - lower left
+        t_lr = (tx + 1)%NTx       + ((ty - 1 + NTy)%NTy)*NTx; // lr - lower right
+        t_ul = (tx - 1 + NTx)%NTx + ((ty + 1)%NTy)*NTx;       // ul - upper left
+        t_ur = (tx + 1)%NTx       + ((ty + 1)%NTy)*NTx;       // ur - upper right
+
+        KPM[orb](    0,     0) = corners[t_ll][orb][3]; // lower left part of KPM connects to upper right (3) part of thread to lower left
+        KPM[orb](    0, LyG-1) = corners[t_ul][orb][2]; // upper left part of KPM connects to lower right (2) part of thread to upper left
+        KPM[orb](LxG-1,     0) = corners[t_lr][orb][1]; // lower right part of KPM connects to upper left (1) part of thread to lower right
+        KPM[orb](LxG-1, LyG-1) = corners[t_ur][orb][0]; // upper right part of KPM connects to lower left (0) part of thread to upper right
 
     }
 #pragma omp barrier
+    debug_message("Left KPM_vectors::fill_ghosts\n");
 }
 
 void KPM_vector::empty_ghosts(){
-
-    unsigned cols, rows;
-
-    cols = LxG;
-    rows = LyG;
+    debug_message("Entered KPM_vectors::empty_ghosts\n");
 
     for(unsigned orb = 0; orb < Norb; orb++){
         // Ghosts on the sides
-        KPM[orb].block(0,1,1,cols-2) = Eigen::Array<T, -1, -1>::Zero(1,cols-2);
-        KPM[orb].block(rows-1,1,1,cols-2) = Eigen::Array<T, -1, -1>::Zero(1,cols-2);
-        KPM[orb].block(1,0,rows-2,1) = Eigen::Array<T, -1, -1>::Zero(rows-2,1);
-        KPM[orb].block(1,cols-1,rows-2,1) = Eigen::Array<T, -1, -1>::Zero(rows-2,1);
+        KPM[orb].block(    0,    1,    1,LyG-2) = Eigen::Array<T, -1, -1>::Zero(    1,LyG-2);
+        KPM[orb].block(LxG-1,    1,    1,LyG-2) = Eigen::Array<T, -1, -1>::Zero(    1,LyG-2);
+        KPM[orb].block(    1,    0,LxG-2,    1) = Eigen::Array<T, -1, -1>::Zero(LxG-2,    1);
+        KPM[orb].block(    1,LyG-1,LxG-2,    1) = Eigen::Array<T, -1, -1>::Zero(LxG-2,    1);
 
         // Ghosts in the corners
-        KPM[orb](0, 0) = 0;
-        KPM[orb](rows-1, cols-1) = 0;
-        KPM[orb](0, cols-1) = 0;
-        KPM[orb](rows-1, 0) = 0;
+        KPM[orb](    0,     0) = 0;
+        KPM[orb](LxG-1, LyG-1) = 0;
+        KPM[orb](    0, LyG-1) = 0;
+        KPM[orb](LxG-1,     0) = 0;
     }
+    debug_message("Left KPM_vectors::empty_ghosts\n");
 }
 
 
 
 void swap_pointers(KPM_vector *KPM1, KPM_vector *KPM0){
+    debug_message("Entered KPM_vector::swap_pointers.\n");
     unsigned Norb = KPM0->Norb;
     Eigen::Array<T, -1, -1> *KPM_temp;
     KPM_temp = new Eigen::Array<T, -1, -1>[Norb];
 
     // Swap the pointers for each of the orbitals between
     // each of the two KPM vectors
-    for(unsigned orb = 0; orb < 2; orb++){
+    for(unsigned orb = 0; orb < Norb; orb++){
         KPM_temp[orb] = KPM1->KPM[orb];
         KPM1->KPM[orb] = KPM0->KPM[orb];
         KPM0->KPM[orb] = KPM_temp[orb];
     }
 
+    debug_message("Left KPM_vector::swap_pointers.\n");
     delete []KPM_temp;
 }
 
@@ -239,20 +247,18 @@ void KPM_vector::set_geometry(unsigned lx, unsigned ly, unsigned norb){
     {
     // Initialize each of the KPM vectors to the right dimensions
     for(unsigned orb = 0; orb < Norb; orb++){
-        KPM[orb] = Eigen::Array<T, -1, -1>::Zero(LyG, LxG);
+        KPM[orb] = Eigen::Array<T, -1, -1>::Zero(LxG, LyG);
         corners[thread_id][orb][0] = 0;
         corners[thread_id][orb][1] = 0;
         corners[thread_id][orb][2] = 0;
         corners[thread_id][orb][3] = 0;
 
-        sides[thread_id][orb][0] = Eigen::Array<T, -1, -1>::Zero(Ly, 1);
-        sides[thread_id][orb][1] = Eigen::Array<T, -1, -1>::Zero(Ly, 1);
-        sides[thread_id][orb][2] = Eigen::Array<T, -1, -1>::Zero(1, Lx);
-        sides[thread_id][orb][3] = Eigen::Array<T, -1, -1>::Zero(1, Lx);
+        sides[thread_id][orb][0] = Eigen::Array<T, -1, -1>::Zero(Lx, 1);
+        sides[thread_id][orb][1] = Eigen::Array<T, -1, -1>::Zero(Lx, 1);
+        sides[thread_id][orb][2] = Eigen::Array<T, -1, -1>::Zero(1, Ly);
+        sides[thread_id][orb][3] = Eigen::Array<T, -1, -1>::Zero(1, Ly);
     }
     }
-        //if(thread_id == 2)
-            //corners[thread_id][0][0] = 99;
 #pragma omp barrier
 
     debug_message("Left KPM_vector set_geometry.\n");

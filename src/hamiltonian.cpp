@@ -11,39 +11,46 @@
 #include "aux.hpp"
 #include "hamiltonian.hpp"
 
+void hamiltonian::set_origin_to_from(Eigen::Array<int, -1,2> origin_temp, Eigen::Array<unsigned, 1,-1> to_temp, Eigen::Array<unsigned, 1, -1> from_temp){
+    debug_message("Entered hamiltonian::set_origin_to_from\n");
+    origin = origin_temp*1;
+    to_matrix = to_temp*1;
+    from_matrix = from_temp*1;
+    debug_message("Left hamiltonian::set_origin_to_from\n");
+}
 
+void hamiltonian::set_orbpos(Eigen::Array<double, -1, -1> orbpos_temp){
+    debug_message("Entered hamiltonian::set_orbpos\n");
 
-void hamiltonian::set_peierls(Eigen::Matrix<int, 2, 2> gauge_matrix){
-    Eigen::Matrix<TR, -1, -1> A(2,2);
+    orb_pos = orbpos_temp*1.0;
+
+    debug_message("Left hamiltonian::set_orbpos\n");
+}
+
+void hamiltonian::set_primitive2(Eigen::Array<double, 2,1> a1_temp, Eigen::Array<double, 2,1> a2_temp){
+    debug_message("Entered hamiltonian::set_primitive2\n");
+    
+    // Lattice vectors
+    a1 = a1_temp*1.0;
+    a2 = a2_temp*1.0;
+    Vcell = abs(a1[0]*a2[1] - a1[1]*a2[0]);
+
+    debug_message("Left hamiltonian::set_primitive2\n");
+}
+
+void hamiltonian::set_peierls(Eigen::Array<int, 2, 2> gauge_matrix){
+    debug_message("Entered hamiltonian::set_peierls\n");
+    Eigen::Array<TR, -1, -1> A(2,2);
     A(0,0) = gauge_matrix(0,0)*1.0/Lattice_Lx;
     A(1,1) = gauge_matrix(1,1)*1.0/Lattice_Ly;
     A(0,1) = gauge_matrix(0,1)*1.0/Lattice_Lx;
     A(1,0) = gauge_matrix(1,0)*1.0/Lattice_Ly;
 
-    // Lattice vectors
-    Eigen::Matrix<TR, 2, 1> a1, a2;
-    a1(0) = sqrt(3.0); 
-    a1(1) = 0.0;
-    a2(0) = sqrt(3.0)/2.0;
-    a2(1) = 3.0/2.0;
+    double flux = A(0,1) - A(1,0); //magnetic flux per unit cell, in units of the flux quantum
 
-    // Lattice vectors in units of the lattice vectors
-    Eigen::Matrix<TR, 2, 1> a1c, a2c;
-    a1c(0) = 1.0; 
-    a1c(1) = 0.0;
-    a2c(0) = 0.0;
-    a2c(1) = 1.0;
-
-    // Vectors between two carbons inside the same unit cell,
-    // in units of the lattice vectors
-    Eigen::Matrix<TR, 2, 1> delta;
-    delta = - 1.0/3.0 * a1c + 2.0/3.0 * a2c;
-    //delta = 2.0/3.0 * a1c - 1.0/3.0 * a2c;
-    delta = delta*0.0;
 
     // neighbour distance for each hopping
     std::complex<TR> im = std::complex<TR>(0, 1.0);
-    Eigen::Matrix<TR, 2, 1> d[6];
 
 
 
@@ -55,43 +62,14 @@ void hamiltonian::set_peierls(Eigen::Matrix<int, 2, 2> gauge_matrix){
      *         |                     ^               |  t0 
      *         |                     |  t3           v
      *         A                     A             _ A _
-     *        / \                             t1   /| |\  t2            ;      
+     *        / \                             t1   /| |\  t2        
      *       /   \                                /     \
      *      B     B                              B       B 
      */
 
-
-    d[0] = -delta;
-    d[1] = -delta + a2c;
-    d[2] = -delta + a2c - a1c;
-    d[3] = delta;
-    d[4] = delta - a2c;
-    d[5] = delta - a2c + a1c;
-
-    // positions for the right hand side
-    Eigen::Matrix<TR, 2, 1> pos1[6], pos0[6];
-    pos0[0] = delta;
-    pos0[1] = delta;
-    pos0[2] = delta;
-    pos0[3] = delta*0.0;
-    pos0[4] = delta*0.0;
-    pos0[5] = delta*0.0;
-
-    pos1[0] = delta*0.0;
-    pos1[1] = delta*0.0;
-    pos1[2] = delta*0.0;
-    pos1[3] = delta;
-    pos1[4] = delta;
-    pos1[5] = delta;
+    //
 
 
-    Eigen::Matrix<TR, 2, 1> origin[6];
-    origin[0] = Eigen::Matrix<TR, 2, 1>(0, 0);
-    origin[1] = Eigen::Matrix<TR, 2, 1>(0, -1);
-    origin[2] = Eigen::Matrix<TR, 2, 1>(1, -1);
-    origin[3] = Eigen::Matrix<TR, 2, 1>(0, 0);
-    origin[4] = Eigen::Matrix<TR, 2, 1>(0, 1);
-    origin[5] = Eigen::Matrix<TR, 2, 1>(-1, 1);
 
     unsigned id;
     unsigned tx, ty;
@@ -102,42 +80,61 @@ void hamiltonian::set_peierls(Eigen::Matrix<int, 2, 2> gauge_matrix){
     id = omp_get_thread_num(); // id = ty*N_threads_x + tx
     tx = id%N_threads_x;
     ty = id/N_threads_x;
-    unsigned size_y = Lattice_Ly/double(N_threads_y) + 0.9;
     unsigned size_x = Lattice_Lx/double(N_threads_x) + 0.9;
+    unsigned size_y = Lattice_Ly/double(N_threads_y) + 0.9;
 
     offset_x = tx*size_x;
-    offset_y = std::max(int(Lattice_Ly)- int((ty + 1)*size_y), 0);
+    offset_y = ty*size_y;
     }
 
+//#pragma omp critical
 #pragma omp barrier
+    //{
 
-    double t = 1.0/SCALE;
-    for(unsigned orb = 0; orb < 6; orb++){
-        for(unsigned j = 0; j < Ly; j++){
-            for(unsigned i = 0; i < Lx; i++){
+    int di, dj;
+    double phase1;
+    double phase2;
+    double phase;
+    for(unsigned hop = 0; hop < N_hoppings; hop++){
+        for(unsigned i = 0; i < Lx; i++){
+            for(unsigned j = 0; j < Ly; j++){
+
+                di = origin(hop,0);
+                dj = origin(hop,1);
+
+                double area1, area2, area3, area4, area;
+                Eigen::Matrix<TR, 2,1> da, db, de;
+                de = di*a1 + dj*a2;
+
+                unsigned to, from;
+                to   = to_matrix[hop];
+                from = from_matrix[hop];
+
+                da = orb_pos(to  ,0)*a1 + orb_pos(to  ,1)*a2;
+                db = orb_pos(from,0)*a1 + orb_pos(from,1)*a2;
+                area1 = (db[0] + da[0])*de[1];
+                area2 = -de[0]*(db[1] + da[1]);
+                area3 = da[0]*db[1];
+                area4 = - db[1]*da[0];
+                area = 0.5*(area1 + area2 + area3 + area4);
+
+                phase1  = (1.0*(i + offset_x) + di/2.0)*dj*A(0,1) + (1.0*(j + offset_y) + dj/2.0)*di*A(1,0);
+                phase2 = flux*area/Vcell;
+                phase = phase1 + phase2;
+
+                //std::cout << "hop" << hop << " " << i << "," << j << " " << "di,dj:" << di << "," << dj<<" " << phase1 << " " << phase2 << " area1,2,3,4:" << area1 << " " << area2 << " " << area3 << " " << area4 << "  da,db" << da[0] << "," << da[1] << " " << db[0] << "," << db[1] << "\n";
+                //
+                //std::cout << "thread:" << id << " hop" << hop << " " << i + offset_x << "," << j + offset_y << " " << "di,dj:" << di << "," << dj<<" phases_reg,inv:" << phase1 << " " << phase2 << " Area:" << area << "  da,db" << da[0] << "," << da[1] << " " << db[0] << "," << db[1] << "\n";
 
 
-                Eigen::Matrix<TR, 2, 1> r, ri, rf, r_med, r_dif;
-                r(0) = offset_x + i; 
-                r(1) = offset_y + Ly - 1 - j;
-
-                r += origin[orb];
-                
-                rf = r + pos0[orb] + d[orb];
-                ri = r + pos0[orb];
-
-                r_med = (rf + ri)/2.0;
-                r_dif = rf - ri;
-
-                double phase1 = r_med.transpose()*A*r_dif;
-                double phase2 = -rf.transpose()*A*pos1[orb];
-                double phase3 = -ri.transpose()*A*pos0[orb];
-
-                hoppings[orb](j, i) = exp(2.0*M_PI*im*(phase1 + phase2 - phase3))*t;
+                hoppings[hop](i, j) *= exp(2.0*M_PI*im*phase);
             }
         }
     }
+    //}
+//#pragma omp barrier
 
+    debug_message("Left hamiltonian::set_peierls\n");
 }
 
 void hamiltonian::set_geometry(unsigned lx, unsigned ly){
@@ -146,9 +143,10 @@ void hamiltonian::set_geometry(unsigned lx, unsigned ly){
 }
 
 
-hamiltonian::hamiltonian(){
-    Norb = 2;
-    N_hoppings = 6;
+hamiltonian::hamiltonian(unsigned Norb_temp, unsigned N_hoppings_temp){
+    std::cout << "N_hoppings: " << N_hoppings_temp << "\n";
+    Norb = Norb_temp;
+    N_hoppings = N_hoppings_temp;
     hoppings = new Eigen::Array<T, -1, -1>[N_hoppings];
     anderson = new Eigen::Array<T, -1, -1>[Norb];
 
@@ -165,7 +163,7 @@ hamiltonian::~hamiltonian(){
 void hamiltonian::set_regular_hoppings(){
 
     for(unsigned i = 0; i < N_hoppings; i++){
-        hoppings[i] = Array::Zero(Ly, Lx) + 1.0/SCALE;
+        hoppings[i] = Array::Zero(Lx, Ly) + 1.0/SCALE;
     }
 }
 
@@ -176,7 +174,7 @@ void hamiltonian::set_anderson_W(double w_anderson){
 void hamiltonian::set_anderson(){
     debug_message("Entered hamiltonian::set_anderson\n");
         for(unsigned j = 0; j < Norb; j++){
-            anderson[j] = Eigen::Array<TR, -1, -1>::Random(Ly, Lx)*W/2.0; // random numbers between -W/2 and W/2
+            anderson[j] = Eigen::Array<TR, -1, -1>::Random(Lx, Ly)*W/2.0; // random numbers between -W/2 and W/2
         }
     is_anderson_set = true;
     debug_message("Left hamiltonian::set_anderson\n");
@@ -195,7 +193,7 @@ void hamiltonian::set_vacancies(Eigen::Array<unsigned, -1, -1> vacA, Eigen::Arra
     //std::cout << "id:" << id << "\n";
     //std::cout << vacanciesA << "\n" << vacanciesB << "\n";
     //}
-    //debug_message("Left hamiltonian::set_vacancies\n");
+    debug_message("Left hamiltonian::set_vacancies\n");
 }
 
 void hamiltonian::H(KPM_vector &KPM_new, KPM_vector &KPM_old, unsigned f){
@@ -203,27 +201,31 @@ void hamiltonian::H(KPM_vector &KPM_new, KPM_vector &KPM_old, unsigned f){
     // Writes the result of H*KPM_old into KPM_new by adding. It does not replace the values
     // This is intentional but may cause some problems if KPM_new is not initialized to zero
 
-    unsigned j = 0;
-    unsigned i = 0;
-    unsigned final_i = Lx;
-    unsigned final_j = Ly;
-
 //#pragma omp barrier
 //#pragma omp critical
     //{
 
     // Anderson disorder for each orbital
-    KPM_new.KPM[0].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[0].block(1+j, 1+i, final_j, final_i)*anderson[0].block(j, i, final_j, final_i)*f;
-    KPM_new.KPM[1].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[1].block(1+j, 1+i, final_j, final_i)*anderson[1].block(j, i, final_j, final_i)*f;
+    debug_message("Adding Anderson disorder\n");
+    for(unsigned i = 0; i < Norb; i++){
+        KPM_new.KPM[i].block(1, 1, Lx, Ly) += KPM_old.KPM[i].block(1, 1, Lx, Ly)*anderson[i]*f;
+    }
 
-    // Regular hoppings
-    KPM_new.KPM[0].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[1].block(1+j, 1+i, final_j, final_i)*hoppings[0].block(j, i, final_j, final_i)*f;
-    KPM_new.KPM[0].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[1].block(2+j, 1+i, final_j, final_i)*hoppings[1].block(j, i, final_j, final_i)*f;
-    KPM_new.KPM[0].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[1].block(2+j, 2+i, final_j, final_i)*hoppings[2].block(j, i, final_j, final_i)*f;
 
-    KPM_new.KPM[1].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[0].block(1+j, 1+i, final_j, final_i)*hoppings[3].block(j, i, final_j, final_i)*f;
-    KPM_new.KPM[1].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[0].block(0+j, 1+i, final_j, final_i)*hoppings[4].block(j, i, final_j, final_i)*f;
-    KPM_new.KPM[1].block(1+j, 1+i, final_j, final_i) += KPM_old.KPM[0].block(0+j, 0+i, final_j, final_i)*hoppings[5].block(j, i, final_j, final_i)*f;
+
+    int d1, d2;
+    unsigned to, from;
+
+    for(unsigned hop = 0; hop < N_hoppings; hop++){
+        to = to_matrix[hop];
+        from = from_matrix[hop];
+        d1 = origin(hop,0);
+        d2 = origin(hop,1);
+
+        //std::cout << "hop:" << hop << " to,from:" << to << "," << from << " d1,d2:" << d1 << "," << d2 << "\n" <<std::flush;
+
+        KPM_new.KPM[to].block(1,1,Lx,Ly) += KPM_old.KPM[from].block(1+d1,1+d2,Lx,Ly)*hoppings[hop]*f;
+    }
 
     // Vacancies
     debug_message("Before vacancies in Hamiltonian\n");
@@ -267,8 +269,9 @@ void hamiltonian::cheb(KPM_vector &KPM_new, KPM_vector &KPM_old, unsigned it_num
     }
 
     if(it_num != 0){
-        KPM_new.KPM[0] = -KPM_new.KPM[0];
-        KPM_new.KPM[1] = -KPM_new.KPM[1];
+        for(unsigned orb = 0; orb < Norb; orb++){
+            KPM_new.KPM[orb] = -KPM_new.KPM[orb];
+        }
         H(KPM_new, KPM_old, 2);
     }
 
